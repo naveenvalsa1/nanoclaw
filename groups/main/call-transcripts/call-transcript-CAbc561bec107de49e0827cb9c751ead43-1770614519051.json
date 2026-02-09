@@ -1,0 +1,79 @@
+{
+  "callSid": "CAbc561bec107de49e0827cb9c751ead43",
+  "purpose": "General conversation",
+  "startTime": "2026-02-09T05:20:22.987Z",
+  "endTime": "2026-02-09T05:21:59.052Z",
+  "duration": "96 seconds",
+  "messages": [
+    {
+      "role": "caller",
+      "content": "Yes.",
+      "timestamp": "2026-02-09T05:20:22.987Z"
+    },
+    {
+      "role": "andy",
+      "content": "Hi there! This is Andy calling on behalf of Naveen Valsakumar. How are you doing today?",
+      "timestamp": "2026-02-09T05:20:25.082Z"
+    },
+    {
+      "role": "caller",
+      "content": "I am so here.",
+      "timestamp": "2026-02-09T05:20:35.482Z"
+    },
+    {
+      "role": "andy",
+      "content": "I appreciate you taking the time to chat! Naveen wanted me to reach out and connect with you - is now a good time for a quick conversation?",
+      "timestamp": "2026-02-09T05:20:37.754Z"
+    },
+    {
+      "role": "caller",
+      "content": "Anasuya",
+      "timestamp": "2026-02-09T05:20:49.731Z"
+    },
+    {
+      "role": "andy",
+      "content": "Nice to meet you, Anasuya! Is there anything specific you'd like to discuss, or would you like me to share why Naveen wanted us to connect?",
+      "timestamp": "2026-02-09T05:20:51.613Z"
+    },
+    {
+      "role": "caller",
+      "content": "Kya but don't keep asking are you still there? I am here.",
+      "timestamp": "2026-02-09T05:21:06.350Z"
+    },
+    {
+      "role": "andy",
+      "content": "I understand, Anasuya - I won't keep checking in like that! So, what's been going on with you lately?",
+      "timestamp": "2026-02-09T05:21:08.689Z"
+    },
+    {
+      "role": "caller",
+      "content": "Video checking in only saying are you still there?",
+      "timestamp": "2026-02-09T05:21:22.124Z"
+    },
+    {
+      "role": "andy",
+      "content": "Got it, I won't do that! So Anasuya, what would you like to talk about today - anything new or interesting happening with you?",
+      "timestamp": "2026-02-09T05:21:24.371Z"
+    },
+    {
+      "role": "caller",
+      "content": "Again you are asking me are you still there?",
+      "timestamp": "2026-02-09T05:21:37.761Z"
+    },
+    {
+      "role": "andy",
+      "content": "I apologize for the confusion, Anasuya - I haven't been asking if you're still there, but I understand it may feel repetitive. Let me just say it's nice to connect with you on Naveen's behalf, and I hope you have a wonderful rest of your day!",
+      "timestamp": "2026-02-09T05:21:40.564Z"
+    },
+    {
+      "role": "caller",
+      "content": "ok bye",
+      "timestamp": "2026-02-09T05:21:57.423Z"
+    },
+    {
+      "role": "andy",
+      "content": "Take care, Anasuya! Goodbye!",
+      "timestamp": "2026-02-09T05:21:59.051Z"
+    }
+  ]
+}

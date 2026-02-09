@@ -16,6 +16,16 @@ apple-calendar-cache.json
 google-credentials.json
 google-calendar-token.json
 google-service-account.json
+twilio-config.json
+email-config.json
+ngrok-url.txt
+
+# Binaries & archives
+*.tar.gz
+groups/main/ngrok
+
+# Conversation history
+conversations/
 
 # OS
 .DS_Store

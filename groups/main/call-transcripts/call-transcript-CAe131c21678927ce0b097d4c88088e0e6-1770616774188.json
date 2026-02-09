@@ -1,0 +1,59 @@
+{
+  "callSid": "CAe131c21678927ce0b097d4c88088e0e6",
+  "purpose": "Schedule a meeting to discuss the new AI-powered OCR system for bill processing. Find out what time works this week.",
+  "startTime": "2026-02-09T05:58:16.726Z",
+  "endTime": "2026-02-09T05:59:34.188Z",
+  "duration": "77 seconds",
+  "messages": [
+    {
+      "role": "caller",
+      "content": "Wait, what?",
+      "timestamp": "2026-02-09T05:58:16.726Z"
+    },
+    {
+      "role": "andy",
+      "content": "Hi! Sorry, let me clarify - I'm calling on behalf of Naveen Valsakumar to schedule a meeting with you this week about the new AI-powered OCR system for bill processing. What day works best for you?",
+      "timestamp": "2026-02-09T05:58:19.212Z"
+    },
+    {
+      "role": "caller",
+      "content": "Wait, wait, can you repeat that?",
+      "timestamp": "2026-02-09T05:58:34.952Z"
+    },
+    {
+      "role": "andy",
+      "content": "Of course! Naveen would like to meet with you this week to discuss an AI-powered OCR system for processing bills. What day and time works for your schedule?",
+      "timestamp": "2026-02-09T05:58:37.205Z"
+    },
+    {
+      "role": "caller",
+      "content": "Can you repeat what you calling about?",
+      "timestamp": "2026-02-09T05:58:52.911Z"
+    },
+    {
+      "role": "andy",
+      "content": "Absolutely! We're calling to set up a meeting about a new OCR system - that's technology that reads and processes bills automatically using AI. Naveen wants to discuss this with you. Does any day this week work for a meeting?",
+      "timestamp": "2026-02-09T05:58:56.355Z"
+    },
+    {
+      "role": "caller",
+      "content": "Today at 3:00 p.m.",
+      "timestamp": "2026-02-09T05:59:17.791Z"
+    },
+    {
+      "role": "andy",
+      "content": "Perfect! I'll schedule Naveen to meet with you today at 3:00 p.m. to discuss the OCR system. Thanks so much for your time!",
+      "timestamp": "2026-02-09T05:59:19.808Z"
+    },
+    {
+      "role": "caller",
+      "content": "Thank you.",
+      "timestamp": "2026-02-09T05:59:32.604Z"
+    },
+    {
+      "role": "andy",
+      "content": "You're welcome! Have a great day!",
+      "timestamp": "2026-02-09T05:59:34.187Z"
+    }
+  ]
+}

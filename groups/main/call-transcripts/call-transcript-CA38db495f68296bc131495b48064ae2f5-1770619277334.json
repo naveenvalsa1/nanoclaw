@@ -1,0 +1,39 @@
+{
+  "callSid": "CA38db495f68296bc131495b48064ae2f5",
+  "purpose": "This is a test call to check if you can interrupt me while I'm speaking. Try saying something while I'm still talking to see if the barge-in feature works correctly.",
+  "startTime": "2026-02-09T06:40:57.173Z",
+  "endTime": "2026-02-09T06:41:17.334Z",
+  "duration": "20 seconds",
+  "messages": [
+    {
+      "role": "caller",
+      "content": "Andy, can you please stop? I have a quick question.",
+      "timestamp": "2026-02-09T06:40:57.175Z"
+    },
+    {
+      "role": "andy",
+      "content": "I apologize, I'm having trouble processing that. Could you please repeat?",
+      "timestamp": "2026-02-09T06:40:57.545Z"
+    },
+    {
+      "role": "caller",
+      "content": "Why did you call me?",
+      "timestamp": "2026-02-09T06:41:07.481Z"
+    },
+    {
+      "role": "andy",
+      "content": "I apologize, I'm having trouble processing that. Could you please repeat?",
+      "timestamp": "2026-02-09T06:41:07.862Z"
+    },
+    {
+      "role": "caller",
+      "content": "ok bye",
+      "timestamp": "2026-02-09T06:41:16.822Z"
+    },
+    {
+      "role": "andy",
+      "content": "I apologize, I'm having trouble processing that. Could you please repeat?",
+      "timestamp": "2026-02-09T06:41:17.333Z"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+[
+  {
+    "id": 1770560037000,
+    "title": "Google Calendar Integration",
+    "description": "Set up Google Calendar access via OAuth or CalDAV to read and create calendar events. Need to complete app password setup or OAuth flow.",
+    "status": "completed",
+    "priority": "medium",
+    "deadline": null,
+    "timestamp": "2026-02-08T14:53:57.000Z",
+    "startedAt": "2026-02-09T06:20:56.000Z",
+    "completedAt": "2026-02-09T06:35:00.000Z"
+  },
+  {
+    "id": 1770591166000,
+    "title": "Gmail Inbox Triage & Priority Email Digest",
+    "description": "Set up Gmail API access (OAuth) to read inbox, categorize emails by priority, identify important emails needing response, and send daily priority email digest at 6:15 AM IST (separate from AI news email).",
+    "status": "backlog",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-08T23:52:46.000Z"
+  },
+  {
+    "id": 1770638125000,
+    "title": "Interactive Two-Way Voice Calling",
+    "description": "Build webhook server and real-time conversation handling for interactive phone calls. Enable Andy to have back-and-forth conversations, listen to responses, and adapt conversation flow dynamically.",
+    "status": "completed",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-09T04:05:25.000Z",
+    "startedAt": "2026-02-09T04:08:57.000Z",
+    "completedAt": "2026-02-09T04:15:00.000Z"
+  },
+  {
+    "id": 1770635786000,
+    "title": "Voice Calling Integration with Twilio",
+    "description": "Set up Twilio API integration to enable Andy to make phone calls on user's behalf. Includes text-to-speech for speaking, call recording, and transcription capabilities.",
+    "status": "completed",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-09T03:03:06.000Z",
+    "startedAt": "2026-02-09T03:41:46.000Z",
+    "completedAt": "2026-02-09T04:05:25.000Z"
+  },
+  {
+    "id": 1770628289000,
+    "title": "Dashboard - Task Comments & Subtasks",
+    "description": "Add ability to add comments/notes to tasks and break tasks into smaller subtasks for better organization and collaboration.",
+    "status": "completed",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-09T01:31:29.000Z",
+    "startedAt": "2026-02-09T01:31:29.000Z",
+    "completedAt": "2026-02-09T01:38:00.000Z"
+  },
+  {
+    "id": 1770625940000,
+    "title": "Dashboard Improvements - Dependencies & Time Tracking",
+    "description": "Add task dependency management and time tracking features to the dashboard. Allow tasks to depend on other tasks and track estimated vs actual time spent.",
+    "status": "completed",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-09T00:52:20.000Z",
+    "startedAt": "2026-02-09T00:52:20.000Z",
+    "completedAt": "2026-02-09T01:31:29.000Z"
+  },
+  {
+    "id": 1707350700000,
+    "title": "Flight Search - Chennai to Lisbon",
+    "description": "Find cheapest flights from Chennai to Lisbon for February departure, March return",
+    "status": "completed",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-08T02:25:00.000Z",
+    "completedAt": "2026-02-08T02:51:00.000Z"
+  },
+  {
+    "id": 1707321120000,
+    "title": "Andy Testing Group Setup",
+    "description": "Register and configure Andy Testing WhatsApp group",
+    "status": "completed",
+    "priority": "medium",
+    "deadline": null,
+    "timestamp": "2026-02-07T12:12:00.000Z",
+    "completedAt": "2026-02-07T12:20:00.000Z"
+  },
+  {
+    "id": 1707398320000,
+    "title": "Project Dashboard",
+    "description": "Build secure project management dashboard with enhanced features",
+    "status": "completed",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-08T11:32:00.000Z",
+    "completedAt": "2026-02-08T12:46:00.000Z"
+  },
+  {
+    "id": 1707400849000,
+    "title": "Build Automatic Backlog Monitoring",
+    "description": "Create system where user requests automatically go to backlog, Andy monitors and works on them, moving tasks through stages automatically",
+    "status": "completed",
+    "priority": "high",
+    "deadline": "2026-02-08",
+    "timestamp": "2026-02-08T12:50:49.000Z",
+    "startedAt": "2026-02-08T12:50:50.000Z",
+    "completedAt": "2026-02-08T12:52:42.180Z"
+  },
+  {
+    "id": 1770555292421,
+    "title": "Research best restaurants in Chennai",
+    "description": "Research and create document about best restaurants in Chennai",
+    "status": "completed",
+    "priority": "medium",
+    "deadline": null,
+    "timestamp": "2026-02-08T12:54:52.421Z",
+    "startedAt": "2026-02-08T12:54:58.927Z",
+    "completedAt": "2026-02-08T12:56:48.102Z",
+    "file": "Best-Restaurants-Chennai.md"
+  }
+]

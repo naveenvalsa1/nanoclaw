@@ -1,0 +1,59 @@
+{
+  "callSid": "CAf7d3d9787536b63341baa7e4a9e9e5b8",
+  "purpose": "General conversation",
+  "startTime": "2026-02-09T05:51:33.016Z",
+  "endTime": "2026-02-09T05:52:40.017Z",
+  "duration": "67 seconds",
+  "messages": [
+    {
+      "role": "caller",
+      "content": "Can you repeat that please?",
+      "timestamp": "2026-02-09T05:51:33.018Z"
+    },
+    {
+      "role": "andy",
+      "content": "Of course! I'm Andy, calling on behalf of Naveen Valsakumar. Just wanted to touch base and see how things are going on your end.",
+      "timestamp": "2026-02-09T05:51:35.233Z"
+    },
+    {
+      "role": "caller",
+      "content": "I thought you are talking to me about a conversation with a calendar.",
+      "timestamp": "2026-02-09T05:51:52.499Z"
+    },
+    {
+      "role": "andy",
+      "content": "Oh no, I apologize for the confusion! No, this isn't about a calendar - just a general check-in call from Naveen. Is now a good time to chat, or should I have him reach out later?",
+      "timestamp": "2026-02-09T05:51:55.077Z"
+    },
+    {
+      "role": "caller",
+      "content": "Having reset letter, please.",
+      "timestamp": "2026-02-09T05:52:10.937Z"
+    },
+    {
+      "role": "andy",
+      "content": "I want to make sure I understand correctly - are you asking for a reset letter? Could you clarify what type of letter you need so I can relay this to Naveen?",
+      "timestamp": "2026-02-09T05:52:13.364Z"
+    },
+    {
+      "role": "caller",
+      "content": "Please recharge later.",
+      "timestamp": "2026-02-09T05:52:25.970Z"
+    },
+    {
+      "role": "andy",
+      "content": "Got it - sounds like now isn't a good time. I'll have Naveen reach out to you later. Thanks!",
+      "timestamp": "2026-02-09T05:52:27.933Z"
+    },
+    {
+      "role": "caller",
+      "content": "Thank you.",
+      "timestamp": "2026-02-09T05:52:38.288Z"
+    },
+    {
+      "role": "andy",
+      "content": "You're welcome! Take care!",
+      "timestamp": "2026-02-09T05:52:40.016Z"
+    }
+  ]
+}

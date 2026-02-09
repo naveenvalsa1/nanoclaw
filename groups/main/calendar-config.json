@@ -1,0 +1,9 @@
+{
+  "service": "caldav",
+  "provider": "google",
+  "username": "naveenvalsa@gmail.com",
+  "password": "NEED_GOOGLE_APP_PASSWORD",
+  "caldav_url": "https://apidata.googleusercontent.com/caldav/v2",
+  "principal_url": "https://apidata.googleusercontent.com/caldav/v2/naveenvalsa@gmail.com/user",
+  "calendar_home_set": null
+}

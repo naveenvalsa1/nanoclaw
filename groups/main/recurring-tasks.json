@@ -1,0 +1,13 @@
+[
+  {
+    "id": "task-1770558801563-1vtmys",
+    "prompt": "Daily AI in Accounting & Finance News Summary (Email)",
+    "description": "Search web for latest news, blogs, and videos about AI in Accounting and Finance, create HTML email, and send to naveenvalsa@gmail.com",
+    "schedule_type": "cron",
+    "schedule_value": "0 6 * * *",
+    "status": "active",
+    "next_run": "Tomorrow at 6:00 AM IST",
+    "run_count": 3,
+    "created_at": "2026-02-08T13:52:00.000Z"
+  }
+]
