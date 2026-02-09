@@ -8,10 +8,14 @@ dist/
 store/
 data/
 logs/
+apple-calendar-cache.json
 
 # Secrets
 *.keys.json
 .env
+google-credentials.json
+google-calendar-token.json
+google-service-account.json
 
 # OS
 .DS_Store
