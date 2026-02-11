@@ -3,6 +3,7 @@ import path from 'path';
 export const ASSISTANT_NAME = process.env.ASSISTANT_NAME || 'Andy';
 export const POLL_INTERVAL = 2000;
 export const SCHEDULER_POLL_INTERVAL = 60000;
+export const API_PORT = parseInt(process.env.API_PORT || '3001', 10);
 
 // Absolute paths needed for container mounts
 const PROJECT_ROOT = process.cwd();

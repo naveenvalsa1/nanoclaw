@@ -83,12 +83,15 @@ If unsure which mode to use, you can ask the user. Examples:
 SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
 • cron: Standard cron expression (e.g., "*/5 * * * *" for every 5 minutes, "0 9 * * *" for daily at 9am LOCAL time)
 • interval: Milliseconds between runs (e.g., "300000" for 5 minutes, "3600000" for 1 hour)
-• once: Local time WITHOUT "Z" suffix (e.g., "2026-02-01T15:30:00"). Do NOT use UTC/Z suffix.`,
+• once: Local time WITHOUT "Z" suffix (e.g., "2026-02-01T15:30:00"). Do NOT use UTC/Z suffix.
+
+GOAL LINKING: If this task is part of a goal, you MUST pass goal_id so the task appears under the goal in the dashboard. Tasks without goal_id will be orphaned.`,
         {
           prompt: z.string().describe('What the agent should do when the task runs. For isolated mode, include all necessary context here.'),
           schedule_type: z.enum(['cron', 'interval', 'once']).describe('cron=recurring at specific times, interval=recurring every N ms, once=run once at specific time'),
           schedule_value: z.string().describe('cron: "*/5 * * * *" | interval: milliseconds like "300000" | once: local timestamp like "2026-02-01T15:30:00" (no Z suffix!)'),
           context_mode: z.enum(['group', 'isolated']).default('group').describe('group=runs with chat history and memory, isolated=fresh session (include context in prompt)'),
+          goal_id: z.string().optional().describe('Link this task to a goal. Use the goal ID from create_goal.'),
           ...(isMain ? { target_group_jid: z.string().optional().describe('JID of the group to schedule the task for. The group must be registered — look up JIDs in /workspace/project/data/registered_groups.json (the keys are JIDs). If the group is not registered, let the user know and ask if they want to activate it. Defaults to the current group.') } : {}),
         },
         async (args) => {
@@ -123,7 +126,7 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
           // Non-main groups can only schedule for themselves
           const targetJid = isMain && args.target_group_jid ? args.target_group_jid : chatJid;
 
-          const data = {
+          const data: Record<string, unknown> = {
             type: 'schedule_task',
             prompt: args.prompt,
             schedule_type: args.schedule_type,
@@ -133,13 +136,21 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
             createdBy: groupFolder,
             timestamp: new Date().toISOString()
           };
+          if (args.goal_id) {
+            data.goal_id = args.goal_id;
+          }
 
           const filename = writeIpcFile(TASKS_DIR, data);
+
+          let response = `Task scheduled (${filename}): ${args.schedule_type} - ${args.schedule_value}`;
+          if (!args.goal_id && /goal[-_]/.test(args.prompt)) {
+            response += '\n\nWARNING: Your prompt mentions a goal but you did not pass goal_id. The task will NOT appear under the goal in the dashboard. Re-create with goal_id if this was intended to be linked.';
+          }
 
           return {
             content: [{
               type: 'text',
-              text: `Task scheduled (${filename}): ${args.schedule_type} - ${args.schedule_value}`
+              text: response
             }]
           };
         }
@@ -274,6 +285,139 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
               text: `Task ${args.task_id} cancellation requested.`
             }]
           };
+        }
+      ),
+
+      tool(
+        'create_goal',
+        `Create a high-level goal. Goals are objectives that guide your work and can have tasks linked to them.
+
+When to create a goal:
+- User describes something they want to achieve (not a one-off task)
+- User says "I want to...", "Help me...", "Keep track of...", "Make sure..."
+- The objective requires multiple tasks or ongoing effort
+
+After creating a goal, break it down into tasks using schedule_task with the goal_id.`,
+        {
+          id: z.string().describe('Goal ID you generate, format: goal-{timestamp}-{random} (e.g. goal-1700000000000-a1b2c3)'),
+          title: z.string().describe('Short title for the goal'),
+          description: z.string().optional().describe('Detailed description of what this goal aims to achieve'),
+          priority: z.enum(['high', 'medium', 'low']).default('medium').describe('Goal priority'),
+          deadline: z.string().optional().describe('Optional deadline as ISO timestamp (e.g. "2026-03-01T00:00:00")')
+        },
+        async (args) => {
+          const data = {
+            type: 'create_goal',
+            id: args.id,
+            title: args.title,
+            description: args.description || null,
+            priority: args.priority || 'medium',
+            deadline: args.deadline || null,
+            groupFolder,
+            timestamp: new Date().toISOString()
+          };
+
+          writeIpcFile(TASKS_DIR, data);
+
+          return {
+            content: [{
+              type: 'text',
+              text: `Goal created: "${args.title}" (${args.id}). Now create tasks linked to this goal using schedule_task with goal_id="${args.id}".`
+            }]
+          };
+        }
+      ),
+
+      tool(
+        'update_goal',
+        'Update a goal\'s status, progress, or details.',
+        {
+          goal_id: z.string().describe('The goal ID to update'),
+          status: z.enum(['active', 'paused', 'completed', 'cancelled']).optional().describe('New status'),
+          progress: z.number().min(0).max(100).optional().describe('Progress percentage (0-100)'),
+          description: z.string().optional().describe('Updated description'),
+          priority: z.enum(['high', 'medium', 'low']).optional().describe('Updated priority'),
+          deadline: z.string().optional().describe('Updated deadline as ISO timestamp')
+        },
+        async (args) => {
+          const data: Record<string, unknown> = {
+            type: 'update_goal',
+            goalId: args.goal_id,
+            groupFolder,
+            timestamp: new Date().toISOString()
+          };
+          if (args.status !== undefined) data.status = args.status;
+          if (args.progress !== undefined) data.progress = args.progress;
+          if (args.description !== undefined) data.description = args.description;
+          if (args.priority !== undefined) data.priority = args.priority;
+          if (args.deadline !== undefined) data.deadline = args.deadline;
+
+          writeIpcFile(TASKS_DIR, data);
+
+          const updates = [];
+          if (args.status) updates.push(`status=${args.status}`);
+          if (args.progress !== undefined) updates.push(`progress=${args.progress}%`);
+          if (args.priority) updates.push(`priority=${args.priority}`);
+
+          return {
+            content: [{
+              type: 'text',
+              text: `Goal ${args.goal_id} update requested: ${updates.join(', ') || 'details updated'}.`
+            }]
+          };
+        }
+      ),
+
+      tool(
+        'list_goals',
+        'List all goals. From main: shows all goals. From other groups: shows only that group\'s goals.',
+        {},
+        async () => {
+          const goalsFile = path.join(IPC_DIR, 'current_goals.json');
+
+          try {
+            if (!fs.existsSync(goalsFile)) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'No goals found.'
+                }]
+              };
+            }
+
+            const allGoals = JSON.parse(fs.readFileSync(goalsFile, 'utf-8'));
+
+            const goals = isMain
+              ? allGoals
+              : allGoals.filter((g: { group_folder: string }) => g.group_folder === groupFolder);
+
+            if (goals.length === 0) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'No goals found.'
+                }]
+              };
+            }
+
+            const formatted = goals.map((g: { id: string; title: string; status: string; priority: string; progress: number; deadline: string | null }) =>
+              `- [${g.id}] ${g.title} (${g.status}, ${g.priority}, ${g.progress}% done${g.deadline ? `, deadline: ${g.deadline}` : ''})`
+            ).join('\n');
+
+            return {
+              content: [{
+                type: 'text',
+                text: `Goals:\n${formatted}`
+              }]
+            };
+          } catch (err) {
+            return {
+              content: [{
+                type: 'text',
+                text: `Error reading goals: ${err instanceof Error ? err.message : String(err)}`
+              }]
+            };
+          }
         }
       ),
 

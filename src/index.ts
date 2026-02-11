@@ -13,6 +13,7 @@ import { CronExpressionParser } from 'cron-parser';
 import {
   ASSISTANT_NAME,
   DATA_DIR,
+  GROUPS_DIR,
   IPC_POLL_INTERVAL,
   MAIN_GROUP_FOLDER,
   POLL_INTERVAL,
@@ -20,20 +21,25 @@ import {
   TIMEZONE,
   TRIGGER_PATTERN,
 } from './config.js';
+import { startApiServer, stopApiServer } from './api-server.js';
 import {
   AgentResponse,
   AvailableGroup,
   runContainerAgent,
+  writeGoalsSnapshot,
   writeGroupsSnapshot,
   writeTasksSnapshot,
 } from './container-runner.js';
 import {
+  createGoal,
   createTask,
   deleteTask,
   getAllChats,
+  getAllGoals,
   getAllRegisteredGroups,
   getAllSessions,
   getAllTasks,
+  getGoalById,
   getLastGroupSync,
   getMessagesSince,
   getNewMessages,
@@ -47,11 +53,13 @@ import {
   storeChatMetadata,
   storeMessage,
   updateChatName,
+  updateGoal,
   updateTask,
 } from './db.js';
+import { writeDashboardData } from './dashboard-writer.js';
 import { GroupQueue } from './group-queue.js';
 import { startSchedulerLoop } from './task-scheduler.js';
-import { RegisteredGroup } from './types.js';
+import { Goal, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
 
 const GROUP_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -285,6 +293,23 @@ async function runAgent(
     })),
   );
 
+  // Update goals snapshot for container to read
+  const goals = getAllGoals();
+  writeGoalsSnapshot(
+    group.folder,
+    isMain,
+    goals.map((g) => ({
+      id: g.id,
+      group_folder: g.group_folder,
+      title: g.title,
+      description: g.description,
+      status: g.status,
+      priority: g.priority,
+      progress: g.progress,
+      deadline: g.deadline,
+    })),
+  );
+
   // Update available groups snapshot (main group only can see all groups)
   const availableGroups = getAvailableGroups();
   writeGroupsSnapshot(
@@ -458,6 +483,24 @@ function startIpcWatcher(): void {
   logger.info('IPC watcher started (per-group namespaces)');
 }
 
+function writeGoalsSnapshotForGroup(groupFolder: string, isMain: boolean): void {
+  const goals = getAllGoals();
+  writeGoalsSnapshot(
+    groupFolder,
+    isMain,
+    goals.map((g) => ({
+      id: g.id,
+      group_folder: g.group_folder,
+      title: g.title,
+      description: g.description,
+      status: g.status,
+      priority: g.priority,
+      progress: g.progress,
+      deadline: g.deadline,
+    })),
+  );
+}
+
 async function processTaskIpc(
   data: {
     type: string;
@@ -469,12 +512,22 @@ async function processTaskIpc(
     groupFolder?: string;
     chatJid?: string;
     targetJid?: string;
+    goal_id?: string;
     // For register_group
     jid?: string;
     name?: string;
     folder?: string;
     trigger?: string;
     containerConfig?: RegisteredGroup['containerConfig'];
+    // For goals
+    goalId?: string;
+    id?: string;
+    title?: string;
+    description?: string;
+    priority?: string;
+    deadline?: string;
+    status?: string;
+    progress?: number;
   },
   sourceGroup: string, // Verified identity from IPC directory
   isMain: boolean, // Verified from directory path
@@ -564,11 +617,13 @@ async function processTaskIpc(
           next_run: nextRun,
           status: 'active',
           created_at: new Date().toISOString(),
+          goal_id: data.goal_id || null,
         });
         logger.info(
           { taskId, sourceGroup, targetFolder, contextMode },
           'Task created via IPC',
         );
+        writeDashboardData(targetFolder);
       }
       break;
 
@@ -581,6 +636,7 @@ async function processTaskIpc(
             { taskId: data.taskId, sourceGroup },
             'Task paused via IPC',
           );
+          writeDashboardData(task.group_folder);
         } else {
           logger.warn(
             { taskId: data.taskId, sourceGroup },
@@ -599,6 +655,7 @@ async function processTaskIpc(
             { taskId: data.taskId, sourceGroup },
             'Task resumed via IPC',
           );
+          writeDashboardData(task.group_folder);
         } else {
           logger.warn(
             { taskId: data.taskId, sourceGroup },
@@ -617,6 +674,7 @@ async function processTaskIpc(
             { taskId: data.taskId, sourceGroup },
             'Task cancelled via IPC',
           );
+          writeDashboardData(task.group_folder);
         } else {
           logger.warn(
             { taskId: data.taskId, sourceGroup },
@@ -672,6 +730,73 @@ async function processTaskIpc(
           { data },
           'Invalid register_group request - missing required fields',
         );
+      }
+      break;
+
+    case 'create_goal':
+      if (data.id && data.title) {
+        const now = new Date().toISOString();
+        const goalPriority =
+          data.priority === 'high' || data.priority === 'medium' || data.priority === 'low'
+            ? data.priority
+            : 'medium';
+        createGoal({
+          id: data.id,
+          group_folder: sourceGroup,
+          title: data.title,
+          description: data.description || null,
+          status: 'active',
+          priority: goalPriority,
+          progress: 0,
+          deadline: data.deadline || null,
+          created_at: now,
+          updated_at: now,
+          completed_at: null,
+        });
+        // Write updated goals snapshot
+        writeGoalsSnapshotForGroup(sourceGroup, isMain);
+        logger.info(
+          { goalId: data.id, sourceGroup },
+          'Goal created via IPC',
+        );
+        writeDashboardData(sourceGroup);
+      }
+      break;
+
+    case 'update_goal':
+      if (data.goalId) {
+        const goal = getGoalById(data.goalId);
+        if (goal && (isMain || goal.group_folder === sourceGroup)) {
+          const goalUpdates: Partial<Goal> = {};
+          if (data.status && ['active', 'paused', 'completed', 'cancelled'].includes(data.status)) {
+            goalUpdates.status = data.status as Goal['status'];
+          }
+          if (data.progress !== undefined) {
+            goalUpdates.progress = data.progress;
+          }
+          if (data.description !== undefined) {
+            goalUpdates.description = data.description;
+          }
+          if (data.priority && ['high', 'medium', 'low'].includes(data.priority)) {
+            goalUpdates.priority = data.priority as Goal['priority'];
+          }
+          if (data.deadline !== undefined) {
+            goalUpdates.deadline = data.deadline;
+          }
+          updateGoal(data.goalId, goalUpdates);
+          // Write updated goals snapshot
+          writeGoalsSnapshotForGroup(sourceGroup, isMain);
+          logger.info(
+            { goalId: data.goalId, sourceGroup },
+            'Goal updated via IPC',
+          );
+          writeDashboardData(goal.group_folder);
+        } else {
+          logger.warn(
+            { goalId: data.goalId, sourceGroup },
+            'Unauthorized goal update attempt',
+          );
+        }
       }
       break;
 
@@ -755,9 +880,42 @@ async function connectWhatsApp(): Promise<void> {
         onProcess: (groupJid, proc, containerName) => queue.registerProcess(groupJid, proc, containerName),
       });
       startIpcWatcher();
+      startApiServer({
+        registeredGroups: () => registeredGroups,
+        writeGoalsSnapshotForGroup,
+      });
       queue.setProcessMessagesFn(processGroupMessages);
+      queue.setStatusCallback((groupJid, active) => {
+        const group = registeredGroups[groupJid];
+        if (!group) return;
+        const statusFile = path.join(GROUPS_DIR, group.folder, 'agent-status.json');
+        const payload = JSON.stringify({
+          status: active ? 'working' : 'idle',
+          since: new Date().toISOString(),
+        });
+        fs.writeFile(statusFile, payload, () => {});
+      });
       recoverPendingMessages();
       startMessageLoop();
+
+      // Periodic dashboard data refresh (every 60 seconds)
+      setInterval(() => {
+        for (const group of Object.values(registeredGroups)) {
+          try {
+            writeDashboardData(group.folder);
+          } catch (err) {
+            logger.error({ err, folder: group.folder }, 'Dashboard write error');
+          }
+        }
+      }, 60000);
+      // Initial dashboard write
+      for (const group of Object.values(registeredGroups)) {
+        try {
+          writeDashboardData(group.folder);
+        } catch (err) {
+          logger.error({ err, folder: group.folder }, 'Initial dashboard write error');
+        }
+      }
     }
   });
 
@@ -919,6 +1077,7 @@ async function main(): Promise<void> {
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
+    stopApiServer();
     await queue.shutdown(10000);
     process.exit(0);
   };
