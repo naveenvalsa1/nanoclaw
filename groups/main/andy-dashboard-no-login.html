@@ -609,6 +609,9 @@ img {
   line-height: 1.4;
   flex-shrink: 0;
 }
+.nav-item .nav-badge:empty {
+  display: none;
+}
 
 .nav-item.active .nav-badge {
   background-color: rgba(255, 255, 255, 0.2);
@@ -2277,6 +2280,11 @@ img {
   color: var(--color-text-primary);
   flex: 1;
   min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
 }
 
 .badge-active {
@@ -2360,6 +2368,14 @@ img {
   gap: var(--space-1);
   font-size: var(--text-badge);
   color: var(--color-text-secondary);
+}
+.recurring-goal-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-badge);
+  color: var(--color-accent);
+  margin-left: auto;
 }
 
 /* ============================================================
@@ -4838,7 +4854,10 @@ async function loadActivityFeed() {
 
 async function loadGoals() {
   try {
-    const res = await fetch('http://localhost:3001/goals');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch('http://localhost:3001/goals', { signal: controller.signal });
+    clearTimeout(timeout);
     if (res.ok) {
       AppState.goals = await res.json();
     }
@@ -4852,12 +4871,6 @@ async function loadGoals() {
     } catch(e2) {
       AppState.goals = AppState.goals || [];
     }
-  }
-  // Update nav badge
-  const badge = document.getElementById('nav-goals-count');
-  if (badge) {
-    const activeCount = AppState.goals.filter(g => g.status === 'active').length;
-    badge.textContent = activeCount > 0 ? activeCount : '';
   }
 }
 
@@ -4941,9 +4954,33 @@ async function refreshAllData() {
     loadGoals()
   ]);
   computeNotifications();
+  updateNavBadges();
   renderCurrentView();
   renderSidebarWidgets();
   renderNotificationBadge();
+}
+
+function updateNavBadges() {
+  const taskBadge = document.getElementById('nav-tasks-count');
+  if (taskBadge) {
+    const count = AppState.tasks.filter(t => t.status === 'backlog' || t.status === 'progress').length;
+    taskBadge.textContent = count > 0 ? count : '';
+  }
+  const goalBadge = document.getElementById('nav-goals-count');
+  if (goalBadge) {
+    const count = (AppState.goals || []).filter(g => g.status === 'active').length;
+    goalBadge.textContent = count > 0 ? count : '';
+  }
+  const calBadge = document.getElementById('nav-calendar-count');
+  if (calBadge) {
+    const count = AppState.todayEvents.length;
+    calBadge.textContent = count > 0 ? count : '';
+  }
+  const recurBadge = document.getElementById('nav-recurring-count');
+  if (recurBadge) {
+    const count = AppState.recurringTasks.filter(t => t.status === 'active').length;
+    recurBadge.textContent = count > 0 ? count : '';
+  }
 }
 
 // ============================================================
@@ -5927,9 +5964,14 @@ function renderRecurringView() {
   container.innerHTML = AppState.recurringTasks.map(t => {
     const scheduleText = formatSchedule(t.schedule_type, t.schedule_value);
     const nextRun = t.next_run ? formatRelativeTime(new Date(t.next_run)) : 'Not scheduled';
+    const lastRun = t.last_run ? formatRelativeTime(new Date(t.last_run)) : 'Never';
     const isActive = t.status === 'active';
     const statusClass = isActive ? 'badge-active' : 'badge-paused';
     const statusLabel = isActive ? 'Active' : 'Paused';
+
+    // Extract a short title from the prompt (first line, truncated)
+    const titleLine = t.prompt.split('\n')[0].replace(/^[\d.)\-:\s]+/, '').trim();
+    const title = titleLine.length > 80 ? titleLine.slice(0, 77) + '...' : titleLine;
 
     // Build schedule indicator (7 dots for Mon-Sun)
     const activeDays = getActiveDaysFromSchedule(t.schedule_type, t.schedule_value);
@@ -5939,20 +5981,23 @@ function renderRecurringView() {
       return `<span class="schedule-dot ${isActiveDay ? 'schedule-dot-active' : ''}" title="${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}">${label}</span>`;
     }).join('');
 
+    // Goal link
+    const goalTag = t.goal_id ? `<span class="recurring-goal-tag">${getIcon('target', 12)} Linked to goal</span>` : '';
+
     return `
       <div class="recurring-card">
         <div class="recurring-card-header">
-          <div class="recurring-card-title">${t.prompt}</div>
+          <div class="recurring-card-title">${escapeHtml(title)}</div>
           <span class="badge ${statusClass}">${statusLabel}</span>
         </div>
-        ${t.description ? `<div class="recurring-card-desc">${t.description}</div>` : ''}
         <div class="recurring-schedule">
           <div class="recurring-schedule-text">${getIcon('clock', 14)} ${scheduleText}</div>
           <div class="schedule-dots">${dotsHtml}</div>
         </div>
         <div class="recurring-card-footer">
           <span class="recurring-meta">${getIcon('recurring', 14)} Next: ${nextRun}</span>
-          <span class="recurring-meta">Runs: ${t.run_count || 0}</span>
+          <span class="recurring-meta">Last: ${lastRun}</span>
+          ${goalTag}
         </div>
       </div>`;
   }).join('');
