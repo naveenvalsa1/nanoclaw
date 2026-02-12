@@ -4,13 +4,13 @@ Personal Claude assistant. See [README.md](README.md) for philosophy and setup. 
 
 ## Quick Context
 
-Single Node.js process that connects to WhatsApp, routes messages to Claude Agent SDK running in Apple Container (Linux VMs). Each group has isolated filesystem and memory.
+Single Node.js process that connects to Telegram (via grammY bot), routes messages to Claude Agent SDK running in Apple Container (Linux VMs). Each group has isolated filesystem and memory.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/index.ts` | Main app: WhatsApp connection, message routing, IPC |
+| `src/index.ts` | Main app: Telegram bot connection, message routing, IPC |
 | `src/config.ts` | Trigger pattern, paths, intervals |
 | `src/container-runner.ts` | Spawns agent containers with mounts |
 | `src/task-scheduler.ts` | Runs scheduled tasks |
@@ -22,7 +22,7 @@ Single Node.js process that connects to WhatsApp, routes messages to Claude Agen
 
 | Skill | When to Use |
 |-------|-------------|
-| `/setup` | First-time installation, authentication, service configuration |
+| `/setup` | First-time installation, Telegram bot setup, service configuration |
 | `/customize` | Adding channels, integrations, changing behavior |
 | `/debug` | Container issues, logs, troubleshooting |
 

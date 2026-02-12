@@ -2,10 +2,8 @@ import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 
-import { proto } from '@whiskeysockets/baileys';
-
 import { DATA_DIR, STORE_DIR } from './config.js';
-import { NewMessage, RegisteredGroup, ScheduledTask, TaskRunLog } from './types.js';
+import { Goal, HelpRequest, NewMessage, RegisteredGroup, ScheduledTask, TaskRunLog } from './types.js';
 
 let db: Database.Database;
 
@@ -60,6 +58,38 @@ export function initDatabase(): void {
       FOREIGN KEY (task_id) REFERENCES scheduled_tasks(id)
     );
     CREATE INDEX IF NOT EXISTS idx_task_run_logs ON task_run_logs(task_id, run_at);
+
+    CREATE TABLE IF NOT EXISTS goals (
+      id TEXT PRIMARY KEY,
+      group_folder TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT DEFAULT 'active',
+      priority TEXT DEFAULT 'medium',
+      progress INTEGER DEFAULT 0,
+      deadline TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      completed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_goals_group ON goals(group_folder);
+    CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
+
+    CREATE TABLE IF NOT EXISTS help_requests (
+      id TEXT PRIMARY KEY,
+      group_folder TEXT NOT NULL,
+      goal_id TEXT,
+      task_id TEXT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      request_type TEXT DEFAULT 'question',
+      status TEXT DEFAULT 'open',
+      response TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      resolved_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_help_requests_status ON help_requests(status);
   `);
 
   // Add sender_name column if it doesn't exist (migration for existing DBs)
@@ -83,6 +113,27 @@ export function initDatabase(): void {
     db.exec(
       `ALTER TABLE registered_groups ADD COLUMN requires_trigger INTEGER DEFAULT 1`,
     );
+  } catch {
+    /* column already exists */
+  }
+
+  // Add goal_id column to scheduled_tasks if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE scheduled_tasks ADD COLUMN goal_id TEXT`);
+  } catch {
+    /* column already exists */
+  }
+
+  // Add depends_on column to scheduled_tasks if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE scheduled_tasks ADD COLUMN depends_on TEXT`);
+  } catch {
+    /* column already exists */
+  }
+
+  // Add timeout column to scheduled_tasks if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE scheduled_tasks ADD COLUMN timeout INTEGER`);
   } catch {
     /* column already exists */
   }
@@ -199,40 +250,31 @@ export function setLastGroupSync(): void {
   ).run(now);
 }
 
+export interface StoreMessageInput {
+  id: string;
+  chatJid: string;
+  sender: string;
+  senderName: string;
+  content: string;
+  timestamp: string;
+  isFromMe: boolean;
+}
+
 /**
  * Store a message with full content.
  * Only call this for registered groups where message history is needed.
  */
-export function storeMessage(
-  msg: proto.IWebMessageInfo,
-  chatJid: string,
-  isFromMe: boolean,
-  pushName?: string,
-): void {
-  if (!msg.key) return;
-
-  const content =
-    msg.message?.conversation ||
-    msg.message?.extendedTextMessage?.text ||
-    msg.message?.imageMessage?.caption ||
-    msg.message?.videoMessage?.caption ||
-    '';
-
-  const timestamp = new Date(Number(msg.messageTimestamp) * 1000).toISOString();
-  const sender = msg.key.participant || msg.key.remoteJid || '';
-  const senderName = pushName || sender.split('@')[0];
-  const msgId = msg.key.id || '';
-
+export function storeMessage(msg: StoreMessageInput): void {
   db.prepare(
     `INSERT OR REPLACE INTO messages (id, chat_jid, sender, sender_name, content, timestamp, is_from_me) VALUES (?, ?, ?, ?, ?, ?, ?)`,
   ).run(
-    msgId,
-    chatJid,
-    sender,
-    senderName,
-    content,
-    timestamp,
-    isFromMe ? 1 : 0,
+    msg.id,
+    msg.chatJid,
+    msg.sender,
+    msg.senderName,
+    msg.content,
+    msg.timestamp,
+    msg.isFromMe ? 1 : 0,
   );
 }
 
@@ -286,8 +328,8 @@ export function createTask(
 ): void {
   db.prepare(
     `
-    INSERT INTO scheduled_tasks (id, group_folder, chat_jid, prompt, schedule_type, schedule_value, context_mode, next_run, status, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO scheduled_tasks (id, group_folder, chat_jid, prompt, schedule_type, schedule_value, context_mode, next_run, status, created_at, goal_id, depends_on, timeout)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     task.id,
@@ -300,6 +342,9 @@ export function createTask(
     task.next_run,
     task.status,
     task.created_at,
+    task.goal_id || null,
+    task.depends_on || null,
+    task.timeout || null,
   );
 }
 
@@ -412,6 +457,210 @@ export function logTaskRun(log: TaskRunLog): void {
     log.result,
     log.error,
   );
+}
+
+// --- Goal accessors ---
+
+export function createGoal(goal: Goal): void {
+  db.prepare(
+    `
+    INSERT INTO goals (id, group_folder, title, description, status, priority, progress, deadline, created_at, updated_at, completed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+  ).run(
+    goal.id,
+    goal.group_folder,
+    goal.title,
+    goal.description,
+    goal.status,
+    goal.priority,
+    goal.progress,
+    goal.deadline,
+    goal.created_at,
+    goal.updated_at,
+    goal.completed_at,
+  );
+}
+
+export function getGoalById(id: string): Goal | undefined {
+  return db.prepare('SELECT * FROM goals WHERE id = ?').get(id) as
+    | Goal
+    | undefined;
+}
+
+export function getGoalsForGroup(groupFolder: string): Goal[] {
+  return db
+    .prepare(
+      'SELECT * FROM goals WHERE group_folder = ? ORDER BY created_at DESC',
+    )
+    .all(groupFolder) as Goal[];
+}
+
+export function getAllGoals(): Goal[] {
+  return db
+    .prepare('SELECT * FROM goals ORDER BY created_at DESC')
+    .all() as Goal[];
+}
+
+export function updateGoal(
+  id: string,
+  updates: Partial<
+    Pick<
+      Goal,
+      'status' | 'progress' | 'description' | 'priority' | 'deadline' | 'title'
+    >
+  >,
+): void {
+  const fields: string[] = ['updated_at = ?'];
+  const values: unknown[] = [new Date().toISOString()];
+
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+    if (updates.status === 'completed') {
+      fields.push('completed_at = ?');
+      values.push(new Date().toISOString());
+    }
+  }
+  if (updates.progress !== undefined) {
+    fields.push('progress = ?');
+    values.push(updates.progress);
+  }
+  if (updates.description !== undefined) {
+    fields.push('description = ?');
+    values.push(updates.description);
+  }
+  if (updates.priority !== undefined) {
+    fields.push('priority = ?');
+    values.push(updates.priority);
+  }
+  if (updates.deadline !== undefined) {
+    fields.push('deadline = ?');
+    values.push(updates.deadline);
+  }
+  if (updates.title !== undefined) {
+    fields.push('title = ?');
+    values.push(updates.title);
+  }
+
+  values.push(id);
+  db.prepare(
+    `UPDATE goals SET ${fields.join(', ')} WHERE id = ?`,
+  ).run(...values);
+}
+
+export function deleteGoal(id: string): void {
+  // Unlink tasks first
+  db.prepare('UPDATE scheduled_tasks SET goal_id = NULL WHERE goal_id = ?').run(
+    id,
+  );
+  db.prepare('DELETE FROM goals WHERE id = ?').run(id);
+}
+
+export function getTasksForGoal(goalId: string): ScheduledTask[] {
+  return db
+    .prepare(
+      'SELECT * FROM scheduled_tasks WHERE goal_id = ? ORDER BY created_at DESC',
+    )
+    .all(goalId) as ScheduledTask[];
+}
+
+// --- Help request accessors ---
+
+export function createHelpRequest(request: HelpRequest): void {
+  db.prepare(
+    `
+    INSERT INTO help_requests (id, group_folder, goal_id, task_id, title, description, request_type, status, response, created_at, updated_at, resolved_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+  ).run(
+    request.id,
+    request.group_folder,
+    request.goal_id,
+    request.task_id,
+    request.title,
+    request.description,
+    request.request_type,
+    request.status,
+    request.response,
+    request.created_at,
+    request.updated_at,
+    request.resolved_at,
+  );
+}
+
+export function getHelpRequestById(id: string): HelpRequest | undefined {
+  return db.prepare('SELECT * FROM help_requests WHERE id = ?').get(id) as
+    | HelpRequest
+    | undefined;
+}
+
+export function getAllHelpRequests(): HelpRequest[] {
+  return db
+    .prepare(
+      "SELECT * FROM help_requests ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC",
+    )
+    .all() as HelpRequest[];
+}
+
+export function getOpenHelpRequests(): HelpRequest[] {
+  return db
+    .prepare(
+      "SELECT * FROM help_requests WHERE status = 'open' ORDER BY created_at DESC",
+    )
+    .all() as HelpRequest[];
+}
+
+export function updateHelpRequest(
+  id: string,
+  updates: Partial<Pick<HelpRequest, 'status' | 'response' | 'resolved_at'>>,
+): void {
+  const fields: string[] = ['updated_at = ?'];
+  const values: unknown[] = [new Date().toISOString()];
+
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+  }
+  if (updates.response !== undefined) {
+    fields.push('response = ?');
+    values.push(updates.response);
+  }
+  if (updates.resolved_at !== undefined) {
+    fields.push('resolved_at = ?');
+    values.push(updates.resolved_at);
+  }
+
+  values.push(id);
+  db.prepare(
+    `UPDATE help_requests SET ${fields.join(', ')} WHERE id = ?`,
+  ).run(...values);
+}
+
+export function getHelpRequestsForGoal(goalId: string): HelpRequest[] {
+  return db
+    .prepare(
+      'SELECT * FROM help_requests WHERE goal_id = ? ORDER BY created_at DESC',
+    )
+    .all(goalId) as HelpRequest[];
+}
+
+// --- Task chaining accessors ---
+
+export function getChildTasks(parentTaskId: string): ScheduledTask[] {
+  return db
+    .prepare(
+      'SELECT * FROM scheduled_tasks WHERE depends_on = ? ORDER BY created_at',
+    )
+    .all(parentTaskId) as ScheduledTask[];
+}
+
+export function getTaskRunResult(taskId: string): TaskRunLog | undefined {
+  return db
+    .prepare(
+      'SELECT * FROM task_run_logs WHERE task_id = ? ORDER BY run_at DESC LIMIT 1',
+    )
+    .get(taskId) as TaskRunLog | undefined;
 }
 
 // --- Router state accessors ---

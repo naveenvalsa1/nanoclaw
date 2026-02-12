@@ -1,23 +1,18 @@
-import { exec, execSync } from 'child_process';
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-import makeWASocket, {
-  DisconnectReason,
-  WASocket,
-  makeCacheableSignalKeyStore,
-  useMultiFileAuthState,
-} from '@whiskeysockets/baileys';
+import { Bot } from 'grammy';
 import { CronExpressionParser } from 'cron-parser';
 
 import {
   ASSISTANT_NAME,
+  BOT_TOKEN,
   DATA_DIR,
   GROUPS_DIR,
   IPC_POLL_INTERVAL,
   MAIN_GROUP_FOLDER,
   POLL_INTERVAL,
-  STORE_DIR,
   TIMEZONE,
   TRIGGER_PATTERN,
 } from './config.js';
@@ -28,10 +23,12 @@ import {
   runContainerAgent,
   writeGoalsSnapshot,
   writeGroupsSnapshot,
+  writeHelpRequestsSnapshot,
   writeTasksSnapshot,
 } from './container-runner.js';
 import {
   createGoal,
+  createHelpRequest,
   createTask,
   deleteTask,
   getAllChats,
@@ -63,41 +60,25 @@ import { Goal, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
 
 const GROUP_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const TELEGRAM_MESSAGE_LIMIT = 4096;
 
-let sock: WASocket;
+let bot: Bot;
 let lastTimestamp = '';
 let sessions: Record<string, string> = {};
 let registeredGroups: Record<string, RegisteredGroup> = {};
 let lastAgentTimestamp: Record<string, string> = {};
-// LID to phone number mapping (WhatsApp now sends LID JIDs for self-chats)
-let lidToPhoneMap: Record<string, string> = {};
-// Guards to prevent duplicate loops on WhatsApp reconnect
 let messageLoopRunning = false;
 let ipcWatcherRunning = false;
 let groupSyncTimerStarted = false;
 
 const queue = new GroupQueue();
 
-/**
- * Translate a JID from LID format to phone format if we have a mapping.
- * Returns the original JID if no mapping exists.
- */
-function translateJid(jid: string): string {
-  if (!jid.endsWith('@lid')) return jid;
-  const lidUser = jid.split('@')[0].split(':')[0];
-  const phoneJid = lidToPhoneMap[lidUser];
-  if (phoneJid) {
-    logger.debug({ lidJid: jid, phoneJid }, 'Translated LID to phone JID');
-    return phoneJid;
-  }
-  return jid;
-}
-
-async function setTyping(jid: string, isTyping: boolean): Promise<void> {
+async function setTyping(chatId: string, isTyping: boolean): Promise<void> {
+  if (!isTyping) return; // Telegram has no "paused" action
   try {
-    await sock.sendPresenceUpdate(isTyping ? 'composing' : 'paused', jid);
+    await bot.api.sendChatAction(Number(chatId), 'typing');
   } catch (err) {
-    logger.debug({ jid, err }, 'Failed to update typing status');
+    logger.debug({ chatId, err }, 'Failed to update typing status');
   }
 }
 
@@ -142,12 +123,11 @@ function registerGroup(jid: string, group: RegisteredGroup): void {
 }
 
 /**
- * Sync group metadata from WhatsApp.
- * Fetches all participating groups and stores their names in the database.
+ * Sync group metadata from Telegram.
+ * Calls getChat() on each registered group to refresh names.
  * Called on startup, daily, and on-demand via IPC.
  */
 async function syncGroupMetadata(force = false): Promise<void> {
-  // Check if we need to sync (skip if synced recently, unless forced)
   if (!force) {
     const lastSync = getLastGroupSync();
     if (lastSync) {
@@ -161,14 +141,17 @@ async function syncGroupMetadata(force = false): Promise<void> {
   }
 
   try {
-    logger.info('Syncing group metadata from WhatsApp...');
-    const groups = await sock.groupFetchAllParticipating();
-
+    logger.info('Syncing group metadata from Telegram...');
     let count = 0;
-    for (const [jid, metadata] of Object.entries(groups)) {
-      if (metadata.subject) {
-        updateChatName(jid, metadata.subject);
-        count++;
+    for (const jid of Object.keys(registeredGroups)) {
+      try {
+        const chat = await bot.api.getChat(Number(jid));
+        if ('title' in chat && chat.title) {
+          updateChatName(jid, chat.title);
+          count++;
+        }
+      } catch (err) {
+        logger.debug({ jid, err }, 'Failed to fetch chat info');
       }
     }
 
@@ -182,13 +165,14 @@ async function syncGroupMetadata(force = false): Promise<void> {
 /**
  * Get available groups list for the agent.
  * Returns groups ordered by most recent activity.
+ * Telegram groups have negative chat IDs.
  */
 function getAvailableGroups(): AvailableGroup[] {
   const chats = getAllChats();
   const registeredJids = new Set(Object.keys(registeredGroups));
 
   return chats
-    .filter((c) => c.jid !== '__group_sync__' && c.jid.endsWith('@g.us'))
+    .filter((c) => c.jid !== '__group_sync__' && Number(c.jid) < 0)
     .map((c) => ({
       jid: c.jid,
       name: c.name,
@@ -319,6 +303,9 @@ async function runAgent(
     new Set(Object.keys(registeredGroups)),
   );
 
+  // Update help requests snapshot so the agent can check responses
+  writeHelpRequestsSnapshot(group.folder, isMain);
+
   try {
     const output = await runContainerAgent(
       group,
@@ -352,12 +339,31 @@ async function runAgent(
   }
 }
 
-async function sendMessage(jid: string, text: string): Promise<void> {
+async function sendMessage(chatId: string, text: string): Promise<void> {
   try {
-    await sock.sendMessage(jid, { text });
-    logger.info({ jid, length: text.length }, 'Message sent');
+    // Telegram has a 4096-character limit per message
+    if (text.length <= TELEGRAM_MESSAGE_LIMIT) {
+      await bot.api.sendMessage(Number(chatId), text);
+    } else {
+      // Split on newline boundaries when possible
+      let remaining = text;
+      while (remaining.length > 0) {
+        let chunk: string;
+        if (remaining.length <= TELEGRAM_MESSAGE_LIMIT) {
+          chunk = remaining;
+          remaining = '';
+        } else {
+          const cutAt = remaining.lastIndexOf('\n', TELEGRAM_MESSAGE_LIMIT);
+          const splitAt = cutAt > TELEGRAM_MESSAGE_LIMIT / 2 ? cutAt : TELEGRAM_MESSAGE_LIMIT;
+          chunk = remaining.slice(0, splitAt);
+          remaining = remaining.slice(splitAt).replace(/^\n/, '');
+        }
+        await bot.api.sendMessage(Number(chatId), chunk);
+      }
+    }
+    logger.info({ chatId, length: text.length }, 'Message sent');
   } catch (err) {
-    logger.error({ jid, err }, 'Failed to send message');
+    logger.error({ chatId, err }, 'Failed to send message');
   }
 }
 
@@ -513,6 +519,8 @@ async function processTaskIpc(
     chatJid?: string;
     targetJid?: string;
     goal_id?: string;
+    depends_on?: string;
+    timeout?: number;
     // For register_group
     jid?: string;
     name?: string;
@@ -528,6 +536,9 @@ async function processTaskIpc(
     deadline?: string;
     status?: string;
     progress?: number;
+    // For help requests
+    request_type?: string;
+    task_id?: string;
   },
   sourceGroup: string, // Verified identity from IPC directory
   isMain: boolean, // Verified from directory path
@@ -606,6 +617,10 @@ async function processTaskIpc(
           data.context_mode === 'group' || data.context_mode === 'isolated'
             ? data.context_mode
             : 'isolated';
+
+        // If depends_on is set, don't set next_run — parent completion will trigger it
+        const effectiveNextRun = data.depends_on ? null : nextRun;
+
         createTask({
           id: taskId,
           group_folder: targetFolder,
@@ -614,10 +629,12 @@ async function processTaskIpc(
           schedule_type: scheduleType,
           schedule_value: data.schedule_value,
           context_mode: contextMode,
-          next_run: nextRun,
+          next_run: effectiveNextRun,
           status: 'active',
           created_at: new Date().toISOString(),
           goal_id: data.goal_id || null,
+          depends_on: data.depends_on || null,
+          timeout: data.timeout || null,
         });
         logger.info(
           { taskId, sourceGroup, targetFolder, contextMode },
@@ -800,153 +817,164 @@ async function processTaskIpc(
       }
       break;
 
+    case 'request_help':
+      if (data.title && data.description) {
+        const helpId = `help-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const now = new Date().toISOString();
+        const requestType =
+          data.request_type === 'blocker' || data.request_type === 'question' ||
+          data.request_type === 'access' || data.request_type === 'integration'
+            ? data.request_type
+            : 'question';
+        createHelpRequest({
+          id: helpId,
+          group_folder: sourceGroup,
+          goal_id: data.goal_id || null,
+          task_id: data.task_id || null,
+          title: data.title,
+          description: data.description,
+          request_type: requestType as 'blocker' | 'question' | 'access' | 'integration',
+          status: 'open',
+          response: null,
+          created_at: now,
+          updated_at: now,
+          resolved_at: null,
+        });
+        writeDashboardData(sourceGroup);
+
+        // Send Telegram notification to the group
+        const groupEntry = Object.entries(registeredGroups).find(
+          ([, g]) => g.folder === sourceGroup,
+        );
+        if (groupEntry) {
+          await sendMessage(
+            groupEntry[0],
+            `${ASSISTANT_NAME}: I need your help: ${data.title}\n\n${data.description}\n\nPlease respond via the dashboard (Requests tab).`,
+          );
+        }
+        logger.info(
+          { helpId, sourceGroup, type: requestType },
+          'Help request created via IPC',
+        );
+      }
+      break;
+
     default:
       logger.warn({ type: data.type }, 'Unknown IPC task type');
   }
 }
 
-async function connectWhatsApp(): Promise<void> {
-  const authDir = path.join(STORE_DIR, 'auth');
-  fs.mkdirSync(authDir, { recursive: true });
+async function connectTelegram(): Promise<void> {
+  if (!BOT_TOKEN) {
+    logger.error('No BOT_TOKEN set. Run: npm run auth');
+    process.exit(1);
+  }
 
-  const { state, saveCreds } = await useMultiFileAuthState(authDir);
+  bot = new Bot(BOT_TOKEN);
 
-  sock = makeWASocket({
-    auth: {
-      creds: state.creds,
-      keys: makeCacheableSignalKeyStore(state.keys, logger),
-    },
-    printQRInTerminal: false,
-    logger,
-    browser: ['NanoClaw', 'Chrome', '1.0.0'],
+  // Validate token
+  const me = await bot.api.getMe();
+  logger.info({ username: me.username, id: me.id }, 'Connected to Telegram');
+
+  // Message handler
+  bot.on('message:text', (ctx) => {
+    const chatId = String(ctx.chat.id);
+    const timestamp = new Date(ctx.message.date * 1000).toISOString();
+    const senderName = ctx.from?.first_name || 'Unknown';
+    const senderId = String(ctx.from?.id || 0);
+    const isGroup = ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
+    const chatName = isGroup && 'title' in ctx.chat ? ctx.chat.title : undefined;
+
+    logger.info({ chatId, senderName, isGroup, chatName }, 'Incoming message');
+
+    // Always store chat metadata for group discovery
+    storeChatMetadata(chatId, timestamp, chatName);
+
+    // Only store full message content for registered groups
+    if (registeredGroups[chatId]) {
+      storeMessage({
+        id: String(ctx.message.message_id),
+        chatJid: chatId,
+        sender: senderId,
+        senderName,
+        content: ctx.message.text,
+        timestamp,
+        isFromMe: ctx.from?.id === me.id,
+      });
+    }
   });
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect, qr } = update;
+  // Error handler
+  bot.catch((err) => {
+    logger.error({ err: err.error }, 'Bot error');
+  });
 
-    if (qr) {
-      const msg =
-        'WhatsApp authentication required. Run /setup in Claude Code.';
-      logger.error(msg);
-      exec(
-        `osascript -e 'display notification "${msg}" with title "NanoClaw" sound name "Basso"'`,
-      );
-      setTimeout(() => process.exit(1), 1000);
-    }
-
-    if (connection === 'close') {
-      const reason = (lastDisconnect?.error as any)?.output?.statusCode;
-      const shouldReconnect = reason !== DisconnectReason.loggedOut;
-      logger.info({ reason, shouldReconnect }, 'Connection closed');
-
-      if (shouldReconnect) {
-        logger.info('Reconnecting...');
-        connectWhatsApp();
-      } else {
-        logger.info('Logged out. Run /setup to re-authenticate.');
-        process.exit(0);
-      }
-    } else if (connection === 'open') {
-      logger.info('Connected to WhatsApp');
-
-      // Build LID to phone mapping from auth state for self-chat translation
-      if (sock.user) {
-        const phoneUser = sock.user.id.split(':')[0];
-        const lidUser = sock.user.lid?.split(':')[0];
-        if (lidUser && phoneUser) {
-          lidToPhoneMap[lidUser] = `${phoneUser}@s.whatsapp.net`;
-          logger.debug({ lidUser, phoneUser }, 'LID to phone mapping set');
-        }
-      }
-
-      // Sync group metadata on startup (respects 24h cache)
+  // Sync group metadata on startup (respects 24h cache)
+  syncGroupMetadata().catch((err) =>
+    logger.error({ err }, 'Initial group sync failed'),
+  );
+  // Set up daily sync timer (only once)
+  if (!groupSyncTimerStarted) {
+    groupSyncTimerStarted = true;
+    setInterval(() => {
       syncGroupMetadata().catch((err) =>
-        logger.error({ err }, 'Initial group sync failed'),
+        logger.error({ err }, 'Periodic group sync failed'),
       );
-      // Set up daily sync timer (only once)
-      if (!groupSyncTimerStarted) {
-        groupSyncTimerStarted = true;
-        setInterval(() => {
-          syncGroupMetadata().catch((err) =>
-            logger.error({ err }, 'Periodic group sync failed'),
-          );
-        }, GROUP_SYNC_INTERVAL_MS);
-      }
-      startSchedulerLoop({
-        sendMessage,
-        registeredGroups: () => registeredGroups,
-        getSessions: () => sessions,
-        queue,
-        onProcess: (groupJid, proc, containerName) => queue.registerProcess(groupJid, proc, containerName),
-      });
-      startIpcWatcher();
-      startApiServer({
-        registeredGroups: () => registeredGroups,
-        writeGoalsSnapshotForGroup,
-      });
-      queue.setProcessMessagesFn(processGroupMessages);
-      queue.setStatusCallback((groupJid, active) => {
-        const group = registeredGroups[groupJid];
-        if (!group) return;
-        const statusFile = path.join(GROUPS_DIR, group.folder, 'agent-status.json');
-        const payload = JSON.stringify({
-          status: active ? 'working' : 'idle',
-          since: new Date().toISOString(),
-        });
-        fs.writeFile(statusFile, payload, () => {});
-      });
-      recoverPendingMessages();
-      startMessageLoop();
+    }, GROUP_SYNC_INTERVAL_MS);
+  }
 
-      // Periodic dashboard data refresh (every 60 seconds)
-      setInterval(() => {
-        for (const group of Object.values(registeredGroups)) {
-          try {
-            writeDashboardData(group.folder);
-          } catch (err) {
-            logger.error({ err, folder: group.folder }, 'Dashboard write error');
-          }
-        }
-      }, 60000);
-      // Initial dashboard write
-      for (const group of Object.values(registeredGroups)) {
-        try {
-          writeDashboardData(group.folder);
-        } catch (err) {
-          logger.error({ err, folder: group.folder }, 'Initial dashboard write error');
-        }
-      }
-    }
+  // Start all subsystems (unchanged)
+  startSchedulerLoop({
+    sendMessage,
+    registeredGroups: () => registeredGroups,
+    getSessions: () => sessions,
+    queue,
+    onProcess: (groupJid, proc, containerName) => queue.registerProcess(groupJid, proc, containerName),
   });
+  startIpcWatcher();
+  startApiServer({
+    registeredGroups: () => registeredGroups,
+    writeGoalsSnapshotForGroup,
+  });
+  queue.setProcessMessagesFn(processGroupMessages);
+  queue.setStatusCallback((groupJid, active) => {
+    const group = registeredGroups[groupJid];
+    if (!group) return;
+    const statusFile = path.join(GROUPS_DIR, group.folder, 'agent-status.json');
+    const payload = JSON.stringify({
+      status: active ? 'working' : 'idle',
+      since: new Date().toISOString(),
+    });
+    fs.writeFile(statusFile, payload, () => {});
+  });
+  recoverPendingMessages();
+  startMessageLoop();
 
-  sock.ev.on('creds.update', saveCreds);
-
-  sock.ev.on('messages.upsert', ({ messages }) => {
-    for (const msg of messages) {
-      if (!msg.message) continue;
-      const rawJid = msg.key.remoteJid;
-      if (!rawJid || rawJid === 'status@broadcast') continue;
-
-      // Translate LID JID to phone JID if applicable
-      const chatJid = translateJid(rawJid);
-
-      const timestamp = new Date(
-        Number(msg.messageTimestamp) * 1000,
-      ).toISOString();
-
-      // Always store chat metadata for group discovery
-      storeChatMetadata(chatJid, timestamp);
-
-      // Only store full message content for registered groups
-      if (registeredGroups[chatJid]) {
-        storeMessage(
-          msg,
-          chatJid,
-          msg.key.fromMe || false,
-          msg.pushName || undefined,
-        );
+  // Periodic dashboard data refresh (every 60 seconds)
+  setInterval(() => {
+    for (const group of Object.values(registeredGroups)) {
+      try {
+        writeDashboardData(group.folder);
+      } catch (err) {
+        logger.error({ err, folder: group.folder }, 'Dashboard write error');
       }
     }
+  }, 60000);
+  // Initial dashboard write
+  for (const group of Object.values(registeredGroups)) {
+    try {
+      writeDashboardData(group.folder);
+    } catch (err) {
+      logger.error({ err, folder: group.folder }, 'Initial dashboard write error');
+    }
+  }
+
+  // Start long polling (auto-reconnects)
+  bot.start({
+    onStart: () => logger.info('Telegram polling started'),
+  }).catch((err) => {
+    logger.error({ err }, 'Bot polling failed');
+    process.exit(1);
   });
 }
 
@@ -1078,13 +1106,14 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
     stopApiServer();
+    if (bot) bot.stop();
     await queue.shutdown(10000);
     process.exit(0);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 
-  await connectWhatsApp();
+  await connectTelegram();
 }
 
 main().catch((err) => {

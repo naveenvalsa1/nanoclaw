@@ -23,6 +23,8 @@
         <string>{{HOME}}</string>
         <key>ASSISTANT_NAME</key>
         <string>Andy</string>
+        <key>BOT_TOKEN</key>
+        <string>{{BOT_TOKEN}}</string>
     </dict>
     <key>StandardOutPath</key>
     <string>{{PROJECT_ROOT}}/logs/nanoclaw.log</string>
