@@ -15,7 +15,10 @@ apple-calendar-cache.json
 .env
 google-credentials.json
 google-calendar-token.json
+google-gmail-credentials.json
+google-gmail-token.json
 google-service-account.json
+gmail-state.json
 twilio-config.json
 email-config.json
 ngrok-url.txt
