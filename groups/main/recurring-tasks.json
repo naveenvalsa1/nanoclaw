@@ -29,9 +29,9 @@
     "schedule_type": "cron",
     "schedule_value": "*/15 * * * *",
     "status": "active",
-    "next_run": "2026-02-18T08:15:00.000Z",
-    "last_run": "2026-02-18T08:01:05.739Z",
-    "last_result": "Urgent email check completed. Reviewed 5 new emails:\n- 4 routine (automated system notifications, order notifications)\n- 1 important (missed call to Naveen's direct email)\n- 0 urgent emails requiring ",
+    "next_run": "2026-02-18T08:45:00.000Z",
+    "last_run": "2026-02-18T08:31:05.290Z",
+    "last_result": "Checked 15 new emails since last history ID 270584870. All emails were classified as ROUTINE (QC approvals, support tickets, call notifications, automated reports) - none met URGENT criteria. Updated ",
     "created_at": "2026-02-18T07:39:43.078Z",
     "goal_id": null
   },
