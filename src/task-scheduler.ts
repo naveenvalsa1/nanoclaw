@@ -10,12 +10,19 @@ import {
   SCHEDULER_POLL_INTERVAL,
   TIMEZONE,
 } from './config.js';
-import { runContainerAgent, writeTasksSnapshot } from './container-runner.js';
+import {
+  runContainerAgent,
+  writeHelpRequestsSnapshot,
+  writeTasksSnapshot,
+} from './container-runner.js';
 import {
   getAllTasks,
+  getChildTasks,
   getDueTasks,
   getTaskById,
+  getTaskRunResult,
   logTaskRun,
+  updateTask,
   updateTaskAfterRun,
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
@@ -81,6 +88,9 @@ async function runTask(
     })),
   );
 
+  // Write help requests snapshot so the agent can check responses
+  writeHelpRequestsSnapshot(task.group_folder, isMain);
+
   let result: string | null = null;
   let error: string | null = null;
 
@@ -100,6 +110,7 @@ async function runTask(
         isMain,
       },
       (proc, containerName) => deps.onProcess(task.chat_jid, proc, containerName),
+      task.timeout || undefined,
     );
 
     if (output.status === 'error') {
@@ -149,6 +160,25 @@ async function runTask(
       ? result.slice(0, 200)
       : 'Completed';
   updateTaskAfterRun(task.id, nextRun, resultSummary);
+
+  // Post-completion hook: trigger child tasks (task chaining)
+  if (!error) {
+    const childTasks = getChildTasks(task.id);
+    if (childTasks.length > 0) {
+      const parentResult = getTaskRunResult(task.id);
+      const parentResultText = parentResult?.result || resultSummary;
+
+      for (const child of childTasks) {
+        // Prepend parent's result to child's prompt
+        const augmentedPrompt = `Previous task result:\n${parentResultText}\n\n---\nYour task: ${child.prompt}`;
+        updateTask(child.id, { prompt: augmentedPrompt, next_run: new Date().toISOString() });
+        logger.info(
+          { parentId: task.id, childId: child.id },
+          'Task chaining: activated child task',
+        );
+      }
+    }
+  }
 }
 
 let schedulerRunning = false;

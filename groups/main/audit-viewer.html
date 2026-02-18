@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log Viewer - Andy Security</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #f1f5f9;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .filters {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #334155;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .log-list {
+            background: #1e293b;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+
+        .log-entry {
+            padding: 16px 20px;
+            border-bottom: 1px solid #334155;
+            display: grid;
+            grid-template-columns: 180px 150px 1fr;
+            gap: 16px;
+            align-items: start;
+            transition: background 0.15s;
+        }
+
+        .log-entry:hover {
+            background: #0f172a;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            font-size: 13px;
+            color: #64748b;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .log-event-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .severity-debug { background: #1e3a8a; color: #93c5fd; }
+        .severity-info { background: #065f46; color: #6ee7b7; }
+        .severity-warn { background: #92400e; color: #fbbf24; }
+        .severity-error { background: #7f1d1d; color: #fca5a5; }
+        .severity-critical { background: #581c87; color: #e9d5ff; }
+
+        .log-data {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .log-data-key {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #334155;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Audit Log Viewer</h1>
+            <p class="subtitle">Security & Compliance Monitoring</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Events</div>
+                <div class="stat-value" id="totalEvents">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Errors</div>
+                <div class="stat-value" id="errorCount" style="color: #fca5a5;">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">API Calls</div>
+                <div class="stat-value" id="apiCallCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Messages</div>
+                <div class="stat-value" id="messageCount">0</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label class="filter-label">Event Type</label>
+                <select id="eventTypeFilter">
+                    <option value="">All Events</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Severity</label>
+                <select id="severityFilter">
+                    <option value="">All Severities</option>
+                    <option value="debug">Debug</option>
+                    <option value="info">Info</option>
+                    <option value="warn">Warn</option>
+                    <option value="error">Error</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Date</label>
+                <input type="date" id="dateFilter">
+            </div>
+            <div class="filter-group" style="display: flex; align-items: flex-end;">
+                <button class="btn" onclick="loadLogs()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="log-list" id="logList">
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <p>No audit logs found</p>
+                <p style="font-size: 13px; margin-top: 8px;">Run some tests to generate logs</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date as default
+        document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
+
+        let allLogs = [];
+
+        // Load logs (simulated - in production would call audit-logger.js)
+        async function loadLogs() {
+            // For demo, we'll load from the test data
+            // In production, this would call: node audit-logger.js query
+
+            const date = document.getElementById('dateFilter').value;
+            const logFile = `audit-logs/audit-${date}.jsonl`;
+
+            try {
+                const response = await fetch(logFile);
+                if (!response.ok) throw new Error('Log file not found');
+
+                const text = await response.text();
+                allLogs = text.trim().split('\n').map(line => JSON.parse(line));
+
+                renderLogs();
+                updateStats();
+                populateEventTypes();
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                showEmptyState();
+            }
+        }
+
+        function renderLogs() {
+            const eventType = document.getElementById('eventTypeFilter').value;
+            const severity = document.getElementById('severityFilter').value;
+
+            let filtered = allLogs;
+            if (eventType) filtered = filtered.filter(l => l.eventType === eventType);
+            if (severity) filtered = filtered.filter(l => l.severity === severity);
+
+            const container = document.getElementById('logList');
+
+            if (filtered.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            container.innerHTML = filtered.map(log => `
+                <div class="log-entry">
+                    <div class="log-timestamp">${new Date(log.timestamp).toLocaleString()}</div>
+                    <div>
+                        <span class="log-event-type severity-${log.severity}">${log.eventType}</span>
+                    </div>
+                    <div class="log-data">
+                        ${Object.entries(log.data).map(([key, value]) =>
+                            `<span class="log-data-key">${key}:</span> ${JSON.stringify(value)}`
+                        ).join('<br>')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('totalEvents').textContent = allLogs.length;
+
+            const errors = allLogs.filter(l => l.severity === 'error' || l.severity === 'critical').length;
+            document.getElementById('errorCount').textContent = errors;
+
+            const apiCalls = allLogs.filter(l => l.eventType === 'api.call').length;
+            document.getElementById('apiCallCount').textContent = apiCalls;
+
+            const messages = allLogs.filter(l =>
+                l.eventType === 'message.received' || l.eventType === 'message.sent'
+            ).length;
+            document.getElementById('messageCount').textContent = messages;
+        }
+
+        function populateEventTypes() {
+            const types = [...new Set(allLogs.map(l => l.eventType))];
+            const select = document.getElementById('eventTypeFilter');
+
+            select.innerHTML = '<option value="">All Events</option>' +
+                types.map(t => `<option value="${t}">${t}</option>`).join('');
+        }
+
+        function showEmptyState() {
+            document.getElementById('logList').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>No audit logs found</p>
+                    <p style="font-size: 13px; margin-top: 8px;">Select a different date or run some tests</p>
+                </div>
+            `;
+        }
+
+        // Add event listeners
+        document.getElementById('eventTypeFilter').addEventListener('change', renderLogs);
+        document.getElementById('severityFilter').addEventListener('change', renderLogs);
+
+        // Load on page load
+        loadLogs();
+    </script>
+</body>
+</html>

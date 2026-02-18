@@ -63,6 +63,35 @@ export interface ScheduledTask {
   last_result: string | null;
   status: 'active' | 'paused' | 'completed';
   created_at: string;
+  goal_id: string | null;
+  depends_on: string | null;
+  timeout: number | null;
+  parent_task_id: string | null;
+}
+
+export interface Project {
+  id: string;
+  group_folder: string;
+  name: string;
+  description: string | null;
+  status: 'active' | 'paused' | 'completed' | 'archived';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Goal {
+  id: string;
+  group_folder: string;
+  project_id: string | null;
+  title: string;
+  description: string | null;
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
+  priority: 'high' | 'medium' | 'low';
+  progress: number;
+  deadline: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
 }
 
 export interface TaskRunLog {
@@ -72,4 +101,20 @@ export interface TaskRunLog {
   status: 'success' | 'error';
   result: string | null;
   error: string | null;
+}
+
+export interface HelpRequest {
+  id: string;
+  group_folder: string;
+  project_id: string | null;
+  goal_id: string | null;
+  task_id: string | null;
+  title: string;
+  description: string;
+  request_type: 'blocker' | 'question' | 'access' | 'integration';
+  status: 'open' | 'resolved';
+  response: string | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
 }

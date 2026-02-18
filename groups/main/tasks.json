@@ -115,5 +115,33 @@
     "startedAt": "2026-02-08T12:54:58.927Z",
     "completedAt": "2026-02-08T12:56:48.102Z",
     "file": "Best-Restaurants-Chennai.md"
+  },
+  {
+    "id": 1770823828544.335,
+    "source_task_id": "task-1770782585316-petyhy",
+    "title": "Daily AI in Accounting & Finance News Digest",
+    "description": "🔄 Automated: Daily at 6:00 AM IST",
+    "status": "progress",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-11T04:30:00.000Z",
+    "isScheduled": true,
+    "scheduleType": "cron",
+    "scheduleValue": "30 0 * * *",
+    "nextRun": "2026-02-12T00:30:00.000Z"
+  },
+  {
+    "id": 1770823828545.6995,
+    "source_task_id": "task-1770782601351-sjam2f",
+    "title": "Weekly Competitor Intelligence Report for Zournal",
+    "description": "🔄 Automated: Every Monday at 6:00 AM IST",
+    "status": "progress",
+    "priority": "high",
+    "deadline": null,
+    "timestamp": "2026-02-10T09:51:00.000Z",
+    "isScheduled": true,
+    "scheduleType": "cron",
+    "scheduleValue": "30 0 * * 1",
+    "nextRun": "2026-02-16T00:30:00.000Z"
   }
 ]

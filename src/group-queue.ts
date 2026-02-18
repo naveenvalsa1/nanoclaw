@@ -27,6 +27,8 @@ export class GroupQueue {
   private waitingGroups: string[] = [];
   private processMessagesFn: ((groupJid: string) => Promise<boolean>) | null =
     null;
+  private statusCallbackFn: ((groupJid: string, active: boolean) => void) | null =
+    null;
   private shuttingDown = false;
 
   private getGroup(groupJid: string): GroupState {
@@ -47,6 +49,20 @@ export class GroupQueue {
 
   setProcessMessagesFn(fn: (groupJid: string) => Promise<boolean>): void {
     this.processMessagesFn = fn;
+  }
+
+  setStatusCallback(fn: (groupJid: string, active: boolean) => void): void {
+    this.statusCallbackFn = fn;
+  }
+
+  private emitStatus(groupJid: string, active: boolean): void {
+    if (this.statusCallbackFn) {
+      try {
+        this.statusCallbackFn(groupJid, active);
+      } catch (err) {
+        logger.warn({ groupJid, err }, 'Status callback error');
+      }
+    }
   }
 
   enqueueMessageCheck(groupJid: string): void {
@@ -122,6 +138,7 @@ export class GroupQueue {
     state.active = true;
     state.pendingMessages = false;
     this.activeCount++;
+    this.emitStatus(groupJid, true);
 
     logger.debug(
       { groupJid, reason, activeCount: this.activeCount },
@@ -145,6 +162,7 @@ export class GroupQueue {
       state.process = null;
       state.containerName = null;
       this.activeCount--;
+      this.emitStatus(groupJid, false);
       this.drainGroup(groupJid);
     }
   }
@@ -153,6 +171,7 @@ export class GroupQueue {
     const state = this.getGroup(groupJid);
     state.active = true;
     this.activeCount++;
+    this.emitStatus(groupJid, true);
 
     logger.debug(
       { groupJid, taskId: task.id, activeCount: this.activeCount },
@@ -168,6 +187,7 @@ export class GroupQueue {
       state.process = null;
       state.containerName = null;
       this.activeCount--;
+      this.emitStatus(groupJid, false);
       this.drainGroup(groupJid);
     }
   }

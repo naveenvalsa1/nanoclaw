@@ -1,11 +1,24 @@
 import http from 'http';
 
-import { API_PORT, MAIN_GROUP_FOLDER } from './config.js';
+import fs from 'fs';
+import path from 'path';
+import { API_PORT, GROUPS_DIR, MAIN_GROUP_FOLDER, TIMEZONE } from './config.js';
+import { CronExpressionParser } from 'cron-parser';
+
 import {
   createGoal,
+  createProject,
   createTask,
+  deleteProject,
   getAllGoals,
+  getAllHelpRequests,
+  getHelpRequestById,
+  getProjectById,
+  getProjectsForGroup,
   getTasksForGoal,
+  updateHelpRequest,
+  updateProject,
+  updateTask,
 } from './db.js';
 import { writeDashboardData } from './dashboard-writer.js';
 import { RegisteredGroup } from './types.js';
@@ -20,7 +33,7 @@ let server: http.Server | null = null;
 
 function setCors(res: http.ServerResponse): void {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
@@ -59,6 +72,11 @@ function findMainGroupJid(
 }
 
 export function startApiServer(deps: ApiDeps): void {
+  if (server) {
+    logger.debug('API server already running, skipping duplicate start');
+    return;
+  }
+
   server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://localhost:${API_PORT}`);
     const method = req.method?.toUpperCase() || 'GET';
@@ -72,16 +90,40 @@ export function startApiServer(deps: ApiDeps): void {
     }
 
     try {
-      if (url.pathname === '/goals' && method === 'POST') {
+      if (url.pathname === '/projects' && method === 'GET') {
+        handleGetProjects(res);
+      } else if (url.pathname === '/projects' && method === 'POST') {
+        await handlePostProject(req, res, deps);
+      } else if (url.pathname.match(/^\/projects\/[^/]+$/) && method === 'PUT') {
+        const projectId = decodeURIComponent(url.pathname.split('/')[2]);
+        await handlePutProject(req, res, projectId);
+      } else if (url.pathname.match(/^\/projects\/[^/]+$/) && method === 'DELETE') {
+        const projectId = decodeURIComponent(url.pathname.split('/')[2]);
+        handleDeleteProject(res, projectId);
+      } else if (url.pathname === '/goals' && method === 'POST') {
         await handlePostGoal(req, res, deps);
       } else if (url.pathname === '/goals' && method === 'GET') {
         handleGetGoals(res);
+      } else if (url.pathname === '/requests' && method === 'GET') {
+        handleGetRequests(res);
+      } else if (url.pathname.match(/^\/requests\/[^/]+\/respond$/) && method === 'POST') {
+        const requestId = url.pathname.split('/')[2];
+        await handleRespondToRequest(req, res, requestId);
       } else {
         json(res, 404, { error: 'Not found' });
       }
     } catch (err) {
       logger.error({ err }, 'API request error');
       json(res, 500, { error: 'Internal server error' });
+    }
+  });
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      logger.warn({ port: API_PORT }, 'API port already in use, skipping (likely reconnect)');
+      server = null;
+    } else {
+      logger.error({ err }, 'API server error');
     }
   });
 
@@ -98,6 +140,104 @@ export function stopApiServer(): void {
   }
 }
 
+async function handlePostProject(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  deps: ApiDeps,
+): Promise<void> {
+  const raw = await readBody(req);
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    json(res, 400, { error: 'Invalid JSON' });
+    return;
+  }
+
+  if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
+    json(res, 400, { error: 'name is required' });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const slug = (data.name as string)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40);
+  const projectId = `proj-${slug}`;
+  const description =
+    typeof data.description === 'string' ? data.description.trim() || null : null;
+
+  createProject({
+    id: projectId,
+    group_folder: MAIN_GROUP_FOLDER,
+    name: (data.name as string).trim(),
+    description,
+    status: 'active',
+    created_at: now,
+    updated_at: now,
+  });
+
+  // Refresh dashboard data
+  writeDashboardData(MAIN_GROUP_FOLDER);
+
+  json(res, 201, { id: projectId, name: (data.name as string).trim() });
+}
+
+async function handlePutProject(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  projectId: string,
+): Promise<void> {
+  const existing = getProjectById(projectId);
+  if (!existing) {
+    json(res, 404, { error: 'Project not found' });
+    return;
+  }
+
+  const raw = await readBody(req);
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    json(res, 400, { error: 'Invalid JSON' });
+    return;
+  }
+
+  const updates: { name?: string; description?: string; status?: string } = {};
+  if (typeof data.name === 'string' && data.name.trim()) updates.name = data.name.trim();
+  if (typeof data.description === 'string') updates.description = data.description.trim() || null as unknown as string;
+  if (typeof data.status === 'string' && ['active', 'paused', 'completed', 'archived'].includes(data.status)) {
+    updates.status = data.status;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    json(res, 400, { error: 'No valid fields to update' });
+    return;
+  }
+
+  updateProject(projectId, updates as Parameters<typeof updateProject>[1]);
+  writeDashboardData(MAIN_GROUP_FOLDER);
+  json(res, 200, { id: projectId, ...updates });
+}
+
+function handleDeleteProject(
+  res: http.ServerResponse,
+  projectId: string,
+): void {
+  const existing = getProjectById(projectId);
+  if (!existing) {
+    json(res, 404, { error: 'Project not found' });
+    return;
+  }
+
+  deleteProject(projectId);
+  writeDashboardData(MAIN_GROUP_FOLDER);
+  json(res, 200, { deleted: projectId });
+}
+
 async function handlePostGoal(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -109,6 +249,7 @@ async function handlePostGoal(
     description?: string;
     priority?: string;
     deadline?: string;
+    project_id?: string;
   };
   try {
     data = JSON.parse(body);
@@ -135,6 +276,7 @@ async function handlePostGoal(
   createGoal({
     id: goalId,
     group_folder: MAIN_GROUP_FOLDER,
+    project_id: typeof data.project_id === 'string' ? data.project_id.trim() || null : null,
     title: data.title.trim(),
     description,
     status: 'active',
@@ -173,16 +315,47 @@ async function handlePostGoal(
       prompt: promptParts.join(' '),
       schedule_type: 'once',
       schedule_value: now,
-      context_mode: 'isolated',
+      context_mode: 'group',
       next_run: now,
       status: 'active',
       created_at: now,
       goal_id: goalId,
+      depends_on: null,
+      timeout: 600000,
+      parent_task_id: null,
     });
 
+    // Create a recurring goal review task
+    const reviewFrequency = priority === 'high' ? '0 9 * * *' : priority === 'medium' ? '0 9 */3 * *' : '0 9 * * 1';
+    const reviewTaskId = `task-${Date.now() + 1}-${Math.random().toString(36).slice(2, 8)}`;
+    createTask({
+      id: reviewTaskId,
+      group_folder: MAIN_GROUP_FOLDER,
+      chat_jid: mainJid,
+      prompt: `Review goal ${goalId}: '${data.title.trim()}'. Read task results for all linked tasks (goal_id=${goalId}). Assess overall progress. Update progress with update_goal. If tasks are failing or stalled, replan. If you're blocked, use request_help. Report significant progress to the user via send_message.`,
+      schedule_type: 'cron',
+      schedule_value: reviewFrequency,
+      context_mode: 'group',
+      next_run: null,
+      status: 'active',
+      created_at: now,
+      goal_id: goalId,
+      depends_on: null,
+      timeout: null,
+      parent_task_id: null,
+    });
+    // Set next_run for the review task via cron parsing
+    try {
+      const interval = CronExpressionParser.parse(reviewFrequency, { tz: TIMEZONE });
+      const nextRun = interval.next().toISOString();
+      updateTask(reviewTaskId, { next_run: nextRun });
+    } catch {
+      // cron parsing failure — task will be picked up on next scheduler cycle
+    }
+
     logger.info(
-      { goalId, taskId },
-      'Goal created via API with breakdown task',
+      { goalId, taskId, reviewTaskId },
+      'Goal created via API with breakdown + review tasks',
     );
   } else {
     logger.warn(
@@ -196,6 +369,16 @@ async function handlePostGoal(
   deps.writeGoalsSnapshotForGroup(MAIN_GROUP_FOLDER, true);
 
   json(res, 201, { id: goalId, success: true });
+}
+
+function handleGetProjects(res: http.ServerResponse): void {
+  const filePath = path.join(GROUPS_DIR, MAIN_GROUP_FOLDER, 'projects.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    json(res, 200, data);
+  } catch {
+    json(res, 200, { projects: [], orphanedGoals: [] });
+  }
 }
 
 function handleGetGoals(res: http.ServerResponse): void {
@@ -217,4 +400,48 @@ function handleGetGoals(res: http.ServerResponse): void {
     };
   });
   json(res, 200, goalsWithTasks);
+}
+
+function handleGetRequests(res: http.ServerResponse): void {
+  const requests = getAllHelpRequests();
+  json(res, 200, requests);
+}
+
+async function handleRespondToRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  requestId: string,
+): Promise<void> {
+  const body = await readBody(req);
+  let data: { response?: string };
+  try {
+    data = JSON.parse(body);
+  } catch {
+    json(res, 400, { error: 'Invalid JSON' });
+    return;
+  }
+
+  if (!data.response || typeof data.response !== 'string' || !data.response.trim()) {
+    json(res, 400, { error: 'response is required' });
+    return;
+  }
+
+  const request = getHelpRequestById(requestId);
+  if (!request) {
+    json(res, 404, { error: 'Help request not found' });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  updateHelpRequest(requestId, {
+    status: 'resolved',
+    response: data.response.trim(),
+    resolved_at: now,
+  });
+
+  // Update dashboard data
+  writeDashboardData(MAIN_GROUP_FOLDER);
+
+  logger.info({ requestId }, 'Help request responded to via API');
+  json(res, 200, { success: true });
 }

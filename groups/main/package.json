@@ -3,9 +3,12 @@
     "@anthropic-ai/sdk": "^0.74.0",
     "axios": "^1.13.5",
     "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
     "dav": "^1.8.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
     "googleapis": "^171.4.0",
+    "helmet": "^8.1.0",
     "node-ical": "^0.25.1",
     "twilio": "^5.12.1"
   }

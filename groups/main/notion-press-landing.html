@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publish Your Authority Book Without the Overwhelm | Notion Press</title>
+    <meta name="description" content="Expert-guided publishing for busy professionals. We handle the complexity, you focus on your expertise. Become a published author in 90 days.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0a2540;
+            --gold: #d4af37;
+            --orange: #ff5722;
+            --teal: #00bfa5;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-600: #757575;
+            --gray-900: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-900);
+            line-height: 1.7;
+            font-size: 18px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Typography System */
+        h1, h2, h3 {
+            font-family: 'Libre Baskerville', serif;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 1.25rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-cta {
+            background: var(--orange);
+            color: white;
+            padding: 0.875rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(255, 87, 34, 0.3);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 87, 34, 0.4);
+        }
+
+        /* Hero Section - Persuasive Design */
+        .hero {
+            min-height: 90vh;
+            background: linear-gradient(160deg, var(--navy) 0%, #1a3a52 100%);
+            color: white;
+            padding: 10rem 2rem 6rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(212, 175, 55, 0.1), transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content {
+            max-width: 600px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--gold);
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 .highlight {
+            color: var(--gold);
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-subheadline {
+            font-size: 1.35rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.9;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            margin-bottom: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gold);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .cta-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--orange);
+            color: white;
+            padding: 1.25rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.05rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px rgba(255, 87, 34, 0.35);
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 87, 34, 0.45);
+        }
+
+        .cta-primary::after {
+            content: '→';
+            font-size: 1.25rem;
+            transition: transform 0.3s;
+        }
+
+        .cta-primary:hover::after {
+            transform: translateX(4px);
+        }
+
+        .cta-secondary {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.05rem;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 2px;
+        }
+
+        .cta-secondary:hover {
+            opacity: 1;
+            border-bottom-color: white;
+        }
+
+        .hero-visual {
+            position: relative;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-image-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 191, 165, 0.1), rgba(212, 175, 55, 0.1));
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            opacity: 0.6;
+            backdrop-filter: blur(20px);
+        }
+
+        /* Section Base Styles */
+        .section {
+            padding: 7rem 2rem;
+        }
+
+        .section-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: var(--gray-100);
+            color: var(--orange);
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .section h2 {
+            font-size: 3rem;
+            color: var(--navy);
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .section-description {
+            font-size: 1.2rem;
+            color: var(--gray-600);
+            line-height: 1.8;
+        }
+
+        /* Benefits Section */
+        .benefits-section {
+            background: var(--gray-50);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .benefit-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            display: flex;
+            gap: 1.5rem;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .benefit-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .benefit-icon-box {
+            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--orange), #ff784e);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+        }
+
+        .benefit-content h3 {
+            font-size: 1.4rem;
+            color: var(--navy);
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        .benefit-content p {
+            color: var(--gray-600);
+            line-height: 1.7;
+        }
+
+        /* 3-Step Process - Visual Timeline */
+        .process-section {
+            background: white;
+        }
+
+        .process-timeline {
+            position: relative;
+            display: flex;
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .process-step {
+            flex: 1;
+            position: relative;
+        }
+
+        .step-connector {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            width: calc(100% + 2rem);
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--teal));
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .process-step:last-child .step-connector {
+            display: none;
+        }
+
+        .step-box {
+            background: white;
+            border: 2px solid var(--gray-100);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s;
+            height: 100%;
+        }
+
+        .step-box:hover {
+            border-color: var(--gold);
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-number-circle {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--navy), #1a3a52);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            position: relative;
+            box-shadow: 0 8px 24px rgba(10, 37, 64, 0.3);
+        }
+
+        .step-number-circle::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .step-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .step-title {
+            font-size: 1.6rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .step-duration {
+            text-align: center;
+            color: var(--orange);
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-description {
+            color: var(--gray-600);
+            line-height: 1.8;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .step-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--orange);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: gap 0.3s;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .step-cta:hover {
+            gap: 1rem;
+        }
+
+        /* Why Choose Section */
+        .why-section {
+            background: var(--navy);
+            color: white;
+        }
+
+        .why-section h2 {
+            color: white;
+        }
+
+        .why-section .section-description {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3rem;
+            margin-top: 4rem;
+        }
+
+        .why-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 3rem;
+            transition: all 0.3s;
+        }
+
+        .why-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .why-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .why-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .why-card p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        /* Social Proof Section */
+        .social-proof-section {
+            background: var(--gray-50);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .testimonial-card {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .quote-icon {
+            font-size: 3rem;
+            color: var(--gold);
+            opacity: 0.3;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        .testimonial-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--gray-900);
+            margin-bottom: 2rem;
+            flex-grow: 1;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .author-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--navy), var(--teal));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .author-name {
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 0.25rem;
+            font-size: 1.05rem;
+        }
+
+        .author-title {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        /* Trust Bar */
+        .trust-bar {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .trust-stat {
+            text-align: center;
+        }
+
+        .trust-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--navy);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .trust-number .highlight {
+            color: var(--orange);
+        }
+
+        .trust-label {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            background: white;
+        }
+
+        .faq-grid {
+            display: grid;
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: var(--gray-50);
+            border-radius: 16px;
+            padding: 2.5rem;
+            border-left: 4px solid var(--gold);
+            transition: all 0.3s;
+        }
+
+        .faq-item:hover {
+            background: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .faq-question {
+            font-size: 1.3rem;
+            color: var(--navy);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-family: 'Libre Baskerville', serif;
+        }
+
+        .faq-answer {
+            color: var(--gray-600);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        /* Final CTA Section */
+        .final-cta-section {
+            background: linear-gradient(160deg, var(--navy) 0%, #0d3a5c 100%);
+            color: white;
+            padding: 7rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.1), transparent 60%);
+            pointer-events: none;
+        }
+
+        .final-cta-container {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .final-cta-section h2 {
+            color: white;
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .final-cta-description {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        .next-steps-box {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 3rem 0;
+        }
+
+        .next-steps-title {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .next-step-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .next-step-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .next-step-number {
+            width: 48px;
+            height: 48px;
+            background: var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--navy);
+            flex-shrink: 0;
+        }
+
+        .next-step-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .risk-reversal {
+            margin-top: 2.5rem;
+            padding-top: 2.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .risk-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .risk-item::before {
+            content: '✓';
+            color: var(--teal);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .contact-info {
+            margin-top: 2rem;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .contact-info strong {
+            color: var(--gold);
+            font-size: 1.25rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--gray-900);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-copyright {
+            font-size: 0.9rem;
+            opacity: 0.6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-visual {
+                height: 300px;
+            }
+
+            .benefits-grid,
+            .why-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .process-timeline {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .step-connector {
+                display: none;
+            }
+
+            .section {
+                padding: 4rem 2rem;
+            }
+
+            .section h2 {
+                font-size: 2.2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 16px;
+            }
+
+            nav {
+                padding: 1rem 0;
+            }
+
+            .nav-container {
+                padding: 0 1rem;
+            }
+
+            .logo {
+                font-size: 1.25rem;
+            }
+
+            .nav-cta {
+                padding: 0.75rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .hero {
+                padding: 6rem 1.25rem 3rem;
+                min-height: auto;
+            }
+
+            .hero-badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .hero h1 {
+                font-size: 1.85rem;
+                margin-bottom: 1.25rem;
+                letter-spacing: -0.5px;
+            }
+
+            .hero-subheadline {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .hero-stats {
+                flex-direction: row;
+                gap: 1rem;
+                padding: 1.25rem 0;
+                margin-bottom: 2rem;
+            }
+
+            .stat-number {
+                font-size: 1.75rem;
+            }
+
+            .stat-label {
+                font-size: 0.7rem;
+            }
+
+            .hero-cta-group {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.75rem;
+            }
+
+            .cta-primary {
+                width: 100%;
+                justify-content: center;
+                padding: 1.1rem 2rem;
+                font-size: 1rem;
+            }
+
+            .cta-secondary {
+                text-align: center;
+                font-size: 0.95rem;
+            }
+
+            .hero-visual {
+                display: none;
+            }
+
+            .section {
+                padding: 3rem 1.25rem;
+            }
+
+            .section h2 {
+                font-size: 1.75rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .section-badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 1rem;
+            }
+
+            .section-description {
+                font-size: 1rem;
+            }
+
+            .benefit-card {
+                padding: 1.75rem;
+            }
+
+            .benefit-icon-box {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+
+            .benefit-content h3 {
+                font-size: 1.2rem;
+            }
+
+            .benefit-content p {
+                font-size: 0.95rem;
+            }
+
+            .step-box {
+                padding: 2rem 1.5rem;
+            }
+
+            .step-number-circle {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 1.5rem;
+            }
+
+            .step-number {
+                font-size: 2.5rem;
+            }
+
+            .step-title {
+                font-size: 1.3rem;
+            }
+
+            .step-duration {
+                font-size: 0.8rem;
+            }
+
+            .step-description {
+                font-size: 0.95rem;
+            }
+
+            .why-card {
+                padding: 2rem;
+            }
+
+            .why-icon {
+                font-size: 2.5rem;
+            }
+
+            .why-card h3 {
+                font-size: 1.3rem;
+            }
+
+            .why-card p {
+                font-size: 0.95rem;
+            }
+
+            .testimonial-card {
+                padding: 2rem;
+            }
+
+            .quote-icon {
+                font-size: 2.5rem;
+            }
+
+            .testimonial-text {
+                font-size: 1rem;
+            }
+
+            .trust-bar {
+                flex-direction: column;
+                gap: 2rem;
+                padding: 2rem;
+            }
+
+            .trust-number {
+                font-size: 2.5rem;
+            }
+
+            .trust-label {
+                font-size: 0.85rem;
+            }
+
+            .faq-item {
+                padding: 1.75rem;
+            }
+
+            .faq-question {
+                font-size: 1.1rem;
+            }
+
+            .faq-answer {
+                font-size: 0.95rem;
+            }
+
+            .final-cta-section {
+                padding: 4rem 1.25rem;
+            }
+
+            .final-cta-section h2 {
+                font-size: 1.85rem;
+            }
+
+            .final-cta-description {
+                font-size: 1rem;
+            }
+
+            .next-steps-box {
+                padding: 2rem 1.5rem;
+                margin: 2rem 0;
+            }
+
+            .next-steps-title {
+                font-size: 1.1rem;
+            }
+
+            .next-step-item {
+                gap: 1rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .next-step-number {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .next-step-text {
+                font-size: 0.95rem;
+            }
+
+            .risk-reversal {
+                flex-direction: column;
+                gap: 0.75rem;
+                padding-top: 2rem;
+                margin-top: 2rem;
+            }
+
+            .risk-item {
+                font-size: 0.85rem;
+            }
+
+            .contact-info {
+                font-size: 0.95rem;
+            }
+
+            .contact-info strong {
+                font-size: 1.1rem;
+            }
+
+            .footer-links {
+                gap: 1.5rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Small mobile phones */
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 1.65rem;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 1.25rem;
+            }
+
+            .stat-item {
+                text-align: center;
+            }
+
+            .section h2 {
+                font-size: 1.5rem;
+            }
+
+            .step-number-circle {
+                width: 70px;
+                height: 70px;
+            }
+
+            .step-number {
+                font-size: 2rem;
+            }
+        }
+
+        /* Smooth Animations */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'GA_MEASUREMENT_ID');
+
+        function trackCTA(location) {
+            gtag('event', 'cta_click', {
+                'event_category': 'engagement',
+                'event_label': location
+            });
+        }
+    </script>
+
+    <!-- Google Ads Conversion -->
+    <script>
+        function gtag_report_conversion(url) {
+            var callback = function () {
+                if (typeof(url) != 'undefined') {
+                    window.location = url;
+                }
+            };
+            gtag('event', 'conversion', {
+                'send_to': 'AW-CONVERSION_ID/CONVERSION_LABEL',
+                'event_callback': callback
+            });
+            return false;
+        }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">Notion Press</div>
+            <a href="#consultation" class="nav-cta" onclick="trackCTA('nav')">Book Free Consultation</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">India's #1 Publishing Platform</div>
+                <h1>
+                    Publish Your <span class="highlight">Authority Book</span> Without the Overwhelm
+                </h1>
+                <p class="hero-subheadline">
+                    Expert-guided publishing for busy professionals. We handle the complexity, you focus on your expertise.
+                </p>
+
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">18K+</div>
+                        <div class="stat-label">Books Published</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">30K</div>
+                        <div class="stat-label">Authors Worldwide</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">90</div>
+                        <div class="stat-label">Days to Launch</div>
+                    </div>
+                </div>
+
+                <div class="hero-cta-group">
+                    <a href="#consultation" class="cta-primary" onclick="trackCTA('hero')">
+                        Book Free Consultation
+                    </a>
+                    <a href="#process" class="cta-secondary">See How It Works</a>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-image-placeholder">
+                    [Hero Image: Professional with published book]
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="section benefits-section">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-badge">Why Publish?</div>
+                <h2>Your Expertise Deserves a Professional Platform</h2>
+                <p class="section-description">
+                    You're an expert in your field. A published book isn't just a project. It's a business asset that transforms your professional presence.
+                </p>
+            </div>
+
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon-box">🎯</div>
+                    <div class="benefit-content">
+                        <h3>Instant Credibility</h3>
+                        <p>A published book positions you as the expert people turn to in your field.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon-box">🎤</div>
+                    <div class="benefit-content">
+                        <h3>Speaking Opportunities</h3>
+                        <p>Get invited to conferences, podcasts, and media appearances.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon-box">💼</div>
+                    <div class="benefit-content">
+                        <h3>Qualified Leads</h3>
+                        <p>Your book attracts qualified leads and ideal clients to your business.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon-box">⭐</div>
+                    <div class="benefit-content">
+                        <h3>Authority Status</h3>
+                        <p>Establish yourself as the go-to expert in your industry.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section class="section process-section" id="process">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-badge">Simple Process</div>
+                <h2>From Manuscript to Published Author in 3 Steps</h2>
+                <p class="section-description">
+                    No overwhelm. No technical headaches. Just a clear path to becoming a published author.
+                </p>
+            </div>
+
+            <div class="process-timeline">
+                <div class="process-step">
+                    <div class="step-box">
+                        <div class="step-number-circle">
+                            <span class="step-number">1</span>
+                        </div>
+                        <h3 class="step-title">Free Consultation</h3>
+                        <div class="step-duration">20 Minutes</div>
+                        <p class="step-description">
+                            Talk to a publishing consultant. Get clarity on your goals, timeline, and next steps. No obligation, just honest advice.
+                        </p>
+                        <a href="#consultation" class="step-cta" onclick="trackCTA('step1')">
+                            Start Here →
+                        </a>
+                    </div>
+                    <div class="step-connector"></div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-box">
+                        <div class="step-number-circle">
+                            <span class="step-number">2</span>
+                        </div>
+                        <h3 class="step-title">Expert-Guided Publishing</h3>
+                        <div class="step-duration">60-90 Days</div>
+                        <p class="step-description">
+                            Your dedicated publishing manager handles everything. Editing, design, formatting, ISBN, copyright. You approve each step, we execute.
+                        </p>
+                        <a href="#consultation" class="step-cta" onclick="trackCTA('step2')">
+                            Start Here →
+                        </a>
+                    </div>
+                    <div class="step-connector"></div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-box">
+                        <div class="step-number-circle">
+                            <span class="step-number">3</span>
+                        </div>
+                        <h3 class="step-title">Professional Launch</h3>
+                        <div class="step-duration">Ongoing</div>
+                        <p class="step-description">
+                            Launch on Amazon, Flipkart, and 150+ countries. Get your marketing toolkit. Become a published author.
+                        </p>
+                        <a href="#consultation" class="step-cta" onclick="trackCTA('step3')">
+                            Start Here →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Section -->
+    <section class="section why-section">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-badge" style="background: rgba(255,255,255,0.1); color: var(--gold);">Why Notion Press</div>
+                <h2>Publishing Made Simple, Quality Made Certain</h2>
+                <p class="section-description">
+                    Traditional publishers reject 97% of submissions. DIY platforms leave you drowning in details. We offer a better way.
+                </p>
+            </div>
+
+            <div class="why-grid">
+                <div class="why-card">
+                    <span class="why-icon">👥</span>
+                    <h3>Guided by Experts</h3>
+                    <p>Your dedicated publishing manager has published hundreds of books. You get personalized guidance, not automated responses.</p>
+                </div>
+
+                <div class="why-card">
+                    <span class="why-icon">✨</span>
+                    <h3>Professional Quality</h3>
+                    <p>Your book matches traditional publishing standards. Professional editing, design, and formatting included.</p>
+                </div>
+
+                <div class="why-card">
+                    <span class="why-icon">🎯</span>
+                    <h3>Focus on Expertise</h3>
+                    <p>We handle the technical complexity. You focus on your content and building your authority.</p>
+                </div>
+
+                <div class="why-card">
+                    <span class="why-icon">⚡</span>
+                    <h3>Launch in 90 Days</h3>
+                    <p>Clear timeline from consultation to published book. No endless waiting or uncertainty.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Section -->
+    <section class="section social-proof-section">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-badge">Success Stories</div>
+                <h2>Over 5,000 Professionals Have Published With Us</h2>
+            </div>
+
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="quote-icon">"</div>
+                    <p class="testimonial-text">
+                        I was overwhelmed by publishing. My Notion Press consultant made it simple. Within 90 days, I had my book. It opened doors I never imagined.
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">RK</div>
+                        <div>
+                            <div class="author-name">Dr. Rajesh Kumar</div>
+                            <div class="author-title">Management Consultant</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="quote-icon">"</div>
+                    <p class="testimonial-text">
+                        As a busy entrepreneur, I had no time for publishing logistics. Notion Press handled everything. Now my book establishes credibility with every client I meet.
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">PS</div>
+                        <div>
+                            <div class="author-name">Priya Sharma</div>
+                            <div class="author-title">Business Coach & Author</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="quote-icon">"</div>
+                    <p class="testimonial-text">
+                        The quality was better than I expected. From editing to cover design, everything was done well. My clients now see me as an authority.
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AM</div>
+                        <div>
+                            <div class="author-name">Arun Mehta</div>
+                            <div class="author-title">Financial Advisor</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trust-bar">
+                <div class="trust-stat">
+                    <div class="trust-number">18,000<span class="highlight">+</span></div>
+                    <div class="trust-label">Books Published</div>
+                </div>
+                <div class="trust-stat">
+                    <div class="trust-number">30,000</div>
+                    <div class="trust-label">Authors Worldwide</div>
+                </div>
+                <div class="trust-stat">
+                    <div class="trust-number"><span class="highlight">#1</span></div>
+                    <div class="trust-label">Platform in India</div>
+                </div>
+                <div class="trust-stat">
+                    <div class="trust-number">150<span class="highlight">+</span></div>
+                    <div class="trust-label">Countries</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section faq-section">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-badge">FAQ</div>
+                <h2>Common Questions from Professionals Like You</h2>
+            </div>
+
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <div class="faq-question">How much does it cost?</div>
+                    <div class="faq-answer">
+                        Investment depends on your needs. During your free consultation, we'll provide transparent pricing based on your goals. Most professional authors invest ₹50,000-₹2,00,000 for a complete package.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">How long does it take?</div>
+                    <div class="faq-answer">
+                        Typically 60-90 days from consultation to published book. Your consultant will provide a clear timeline based on your manuscript readiness.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">What if I'm not happy with the quality?</div>
+                    <div class="faq-answer">
+                        We don't finalize anything without your approval. At every step (editing, design, formatting), you review and approve before we proceed.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Is this "real" publishing or self-publishing?</div>
+                    <div class="faq-answer">
+                        It's hybrid publishing. You get the expert guidance of traditional publishing with the control and speed of self-publishing. Your book gets ISBN, copyright, and professional distribution.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Do I retain rights to my work?</div>
+                    <div class="faq-answer">
+                        Absolutely. You own 100% of the rights to your book. Always.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="final-cta-section" id="consultation">
+        <div class="final-cta-container">
+            <h2>Ready to Become a Published Author?</h2>
+            <p class="final-cta-description">
+                Book your free consultation with a publishing consultant. Get clear on your path forward.
+            </p>
+
+            <div class="next-steps-box">
+                <div class="next-steps-title">What Happens Next:</div>
+                <div class="next-step-item">
+                    <div class="next-step-number">1</div>
+                    <div class="next-step-text">20-minute consultation call (no obligation)</div>
+                </div>
+                <div class="next-step-item">
+                    <div class="next-step-number">2</div>
+                    <div class="next-step-text">Personalized publishing roadmap</div>
+                </div>
+                <div class="next-step-item">
+                    <div class="next-step-number">3</div>
+                    <div class="next-step-text">Clear next steps and timeline</div>
+                </div>
+            </div>
+
+            <a href="https://notionpress.com/contact" class="cta-primary" onclick="trackCTA('final'); return gtag_report_conversion('https://notionpress.com/contact');">
+                Book Your Free Consultation
+            </a>
+
+            <div class="risk-reversal">
+                <div class="risk-item">Free consultation, no obligation</div>
+                <div class="risk-item">Cancel anytime before publishing</div>
+                <div class="risk-item">100% satisfaction guaranteed</div>
+            </div>
+
+            <p class="contact-info">Questions? Call us: <strong>+91-80-4127-3004</strong></p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="https://notionpress.com">Home</a>
+            <a href="https://notionpress.com/about">About</a>
+            <a href="https://notionpress.com/services">Services</a>
+            <a href="https://notionpress.com/authors">Our Authors</a>
+            <a href="https://notionpress.com/blog">Blog</a>
+            <a href="https://notionpress.com/contact">Contact</a>
+        </div>
+        <div class="footer-copyright">
+            &copy; 2026 Notion Press. India's #1 Self Publishing Platform. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Scroll Depth Tracking -->
+    <script>
+        let scrollDepths = [25, 50, 75, 100];
+        let trackedDepths = [];
+
+        window.addEventListener('scroll', function() {
+            let scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+
+            scrollDepths.forEach(function(depth) {
+                if (scrollPercent >= depth && !trackedDepths.includes(depth)) {
+                    trackedDepths.push(depth);
+                    gtag('event', 'scroll_depth', {
+                        'event_category': 'engagement',
+                        'event_label': depth + '%'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

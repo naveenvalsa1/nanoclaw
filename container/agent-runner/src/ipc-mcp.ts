@@ -92,6 +92,9 @@ GOAL LINKING: If this task is part of a goal, you MUST pass goal_id so the task 
           schedule_value: z.string().describe('cron: "*/5 * * * *" | interval: milliseconds like "300000" | once: local timestamp like "2026-02-01T15:30:00" (no Z suffix!)'),
           context_mode: z.enum(['group', 'isolated']).default('group').describe('group=runs with chat history and memory, isolated=fresh session (include context in prompt)'),
           goal_id: z.string().optional().describe('Link this task to a goal. Use the goal ID from create_goal.'),
+          depends_on: z.string().optional().describe('Task ID this task depends on. Will run after that task completes, with its result injected into the prompt. Use for multi-step workflows.'),
+          timeout: z.number().optional().describe('Timeout in seconds for this task (max 900). Defaults to 300 (5 min). Use longer timeouts for complex tasks.'),
+          parent_task_id: z.string().optional().describe('Parent task ID if this is a subtask. Use for breaking down complex tasks into sub-steps.'),
           ...(isMain ? { target_group_jid: z.string().optional().describe('JID of the group to schedule the task for. The group must be registered — look up JIDs in /workspace/project/data/registered_groups.json (the keys are JIDs). If the group is not registered, let the user know and ask if they want to activate it. Defaults to the current group.') } : {}),
         },
         async (args) => {
@@ -138,6 +141,16 @@ GOAL LINKING: If this task is part of a goal, you MUST pass goal_id so the task 
           };
           if (args.goal_id) {
             data.goal_id = args.goal_id;
+          }
+          if (args.depends_on) {
+            data.depends_on = args.depends_on;
+          }
+          if (args.parent_task_id) {
+            data.parent_task_id = args.parent_task_id;
+          }
+          if (args.timeout) {
+            const timeoutMs = Math.min(args.timeout, 900) * 1000;
+            data.timeout = timeoutMs;
           }
 
           const filename = writeIpcFile(TASKS_DIR, data);
@@ -303,10 +316,11 @@ After creating a goal, break it down into tasks using schedule_task with the goa
           title: z.string().describe('Short title for the goal'),
           description: z.string().optional().describe('Detailed description of what this goal aims to achieve'),
           priority: z.enum(['high', 'medium', 'low']).default('medium').describe('Goal priority'),
-          deadline: z.string().optional().describe('Optional deadline as ISO timestamp (e.g. "2026-03-01T00:00:00")')
+          deadline: z.string().optional().describe('Optional deadline as ISO timestamp (e.g. "2026-03-01T00:00:00")'),
+          project_id: z.string().optional().describe('Link this goal to a project. Use the project ID from create_project.')
         },
         async (args) => {
-          const data = {
+          const data: Record<string, unknown> = {
             type: 'create_goal',
             id: args.id,
             title: args.title,
@@ -316,6 +330,7 @@ After creating a goal, break it down into tasks using schedule_task with the goa
             groupFolder,
             timestamp: new Date().toISOString()
           };
+          if (args.project_id) data.project_id = args.project_id;
 
           writeIpcFile(TASKS_DIR, data);
 
@@ -423,11 +438,11 @@ After creating a goal, break it down into tasks using schedule_task with the goa
 
       tool(
         'register_group',
-        `Register a new WhatsApp group so the agent can respond to messages there. Main group only.
+        `Register a new Telegram group so the agent can respond to messages there. Main group only.
 
-Use available_groups.json to find the JID for a group. The folder name should be lowercase with hyphens (e.g., "family-chat").`,
+Use available_groups.json to find the chat ID for a group. The folder name should be lowercase with hyphens (e.g., "family-chat").`,
         {
-          jid: z.string().describe('The WhatsApp JID (e.g., "120363336345536173@g.us")'),
+          jid: z.string().describe('The Telegram chat ID (e.g., "-1001234567890")'),
           name: z.string().describe('Display name for the group'),
           folder: z.string().describe('Folder name for group files (lowercase, hyphens, e.g., "family-chat")'),
           trigger: z.string().describe('Trigger word (e.g., "@Andy")')
@@ -457,6 +472,222 @@ Use available_groups.json to find the JID for a group. The folder name should be
               text: `Group "${args.name}" registered. It will start receiving messages immediately.`
             }]
           };
+        }
+      ),
+
+      tool(
+        'request_help',
+        `Ask the user for help when you're blocked or need something. The request will be sent to the user via Telegram and shown in the dashboard where they can respond.
+
+Request types:
+- blocker: You can't proceed without this (missing access, credentials, etc.)
+- question: You need clarification on requirements
+- access: You need access to a system, API, or resource
+- integration: You need a new integration set up
+
+Always link to the relevant project_id, goal_id, and task_id if applicable.`,
+        {
+          title: z.string().describe('Short title for the help request'),
+          description: z.string().describe('Detailed description of what you need help with'),
+          request_type: z.enum(['blocker', 'question', 'access', 'integration']).default('question').describe('Type of help needed'),
+          project_id: z.string().optional().describe('Project ID this request relates to'),
+          goal_id: z.string().optional().describe('Goal ID this request relates to'),
+          task_id: z.string().optional().describe('Task ID this request relates to')
+        },
+        async (args) => {
+          const data: Record<string, unknown> = {
+            type: 'request_help',
+            title: args.title,
+            description: args.description,
+            request_type: args.request_type || 'question',
+            groupFolder,
+            timestamp: new Date().toISOString()
+          };
+          if (args.project_id) data.project_id = args.project_id;
+          if (args.goal_id) data.goal_id = args.goal_id;
+          if (args.task_id) data.task_id = args.task_id;
+
+          writeIpcFile(TASKS_DIR, data);
+
+          return {
+            content: [{
+              type: 'text',
+              text: `Help request sent: "${args.title}". The user will be notified via Telegram and can respond in the dashboard.`
+            }]
+          };
+        }
+      ),
+
+      tool(
+        'create_project',
+        `Create a top-level project. Projects are containers for related goals.
+
+Examples of projects: "Notion Press", "Zournal", "Zero Origin", "Personal Health".
+After creating a project, create goals within it using create_goal with project_id.`,
+        {
+          id: z.string().describe('Project ID you generate, format: proj-{short-slug} (e.g. proj-notion-press)'),
+          name: z.string().describe('Short name for the project'),
+          description: z.string().optional().describe('Description of what this project is about')
+        },
+        async (args) => {
+          const data = {
+            type: 'create_project',
+            id: args.id,
+            name: args.name,
+            description: args.description || null,
+            groupFolder,
+            timestamp: new Date().toISOString()
+          };
+
+          writeIpcFile(TASKS_DIR, data);
+
+          return {
+            content: [{
+              type: 'text',
+              text: `Project created: "${args.name}" (${args.id}). Now create goals within this project using create_goal with project_id="${args.id}".`
+            }]
+          };
+        }
+      ),
+
+      tool(
+        'update_project',
+        'Update a project\'s name, description, or status.',
+        {
+          project_id: z.string().describe('The project ID to update'),
+          name: z.string().optional().describe('Updated project name'),
+          description: z.string().optional().describe('Updated description'),
+          status: z.enum(['active', 'paused', 'completed', 'archived']).optional().describe('New status')
+        },
+        async (args) => {
+          const data: Record<string, unknown> = {
+            type: 'update_project',
+            projectId: args.project_id,
+            groupFolder,
+            timestamp: new Date().toISOString()
+          };
+          if (args.name !== undefined) data.name = args.name;
+          if (args.description !== undefined) data.description = args.description;
+          if (args.status !== undefined) data.status = args.status;
+
+          writeIpcFile(TASKS_DIR, data);
+
+          const updates = [];
+          if (args.name) updates.push(`name=${args.name}`);
+          if (args.status) updates.push(`status=${args.status}`);
+
+          return {
+            content: [{
+              type: 'text',
+              text: `Project ${args.project_id} update requested: ${updates.join(', ') || 'details updated'}.`
+            }]
+          };
+        }
+      ),
+
+      tool(
+        'list_projects',
+        'List all projects. From main: shows all projects. From other groups: shows only that group\'s projects.',
+        {},
+        async () => {
+          const projectsFile = path.join(IPC_DIR, 'current_projects.json');
+
+          try {
+            if (!fs.existsSync(projectsFile)) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'No projects found.'
+                }]
+              };
+            }
+
+            const allProjects = JSON.parse(fs.readFileSync(projectsFile, 'utf-8'));
+
+            const projects = isMain
+              ? allProjects
+              : allProjects.filter((p: { group_folder: string }) => p.group_folder === groupFolder);
+
+            if (projects.length === 0) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'No projects found.'
+                }]
+              };
+            }
+
+            const formatted = projects.map((p: { id: string; name: string; status: string; description: string | null }) =>
+              `- [${p.id}] ${p.name} (${p.status})${p.description ? ` — ${p.description.slice(0, 60)}` : ''}`
+            ).join('\n');
+
+            return {
+              content: [{
+                type: 'text',
+                text: `Projects:\n${formatted}`
+              }]
+            };
+          } catch (err) {
+            return {
+              content: [{
+                type: 'text',
+                text: `Error reading projects: ${err instanceof Error ? err.message : String(err)}`
+              }]
+            };
+          }
+        }
+      ),
+
+      tool(
+        'check_help_requests',
+        'Check for help request responses from the user. Use this to see if the user has responded to any of your previous help requests before proceeding.',
+        {},
+        async () => {
+          const requestsFile = path.join(IPC_DIR, 'help_requests.json');
+
+          try {
+            if (!fs.existsSync(requestsFile)) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'No help requests found.'
+                }]
+              };
+            }
+
+            const requests = JSON.parse(fs.readFileSync(requestsFile, 'utf-8'));
+
+            if (!Array.isArray(requests) || requests.length === 0) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'No help requests found.'
+                }]
+              };
+            }
+
+            const formatted = requests.map((r: { id: string; title: string; status: string; request_type: string; response: string | null; created_at: string }) => {
+              let line = `- [${r.id}] "${r.title}" (${r.request_type}) — ${r.status}`;
+              if (r.status === 'resolved' && r.response) {
+                line += `\n  Response: ${r.response}`;
+              }
+              return line;
+            }).join('\n');
+
+            return {
+              content: [{
+                type: 'text',
+                text: `Help requests:\n${formatted}`
+              }]
+            };
+          } catch (err) {
+            return {
+              content: [{
+                type: 'text',
+                text: `Error reading help requests: ${err instanceof Error ? err.message : String(err)}`
+              }]
+            };
+          }
         }
       )
     ]

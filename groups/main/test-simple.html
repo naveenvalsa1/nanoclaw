@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Data Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        pre { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Data Test</h1>
+    <p>Testing if JSON files load correctly...</p>
+
+    <h2>1. Recurring Tasks</h2>
+    <div id="recurring-status">Loading...</div>
+    <div id="recurring-count"></div>
+    <pre id="recurring-preview"></pre>
+
+    <h2>2. Calendar Events</h2>
+    <div id="calendar-status">Loading...</div>
+    <div id="calendar-count"></div>
+    <pre id="calendar-preview"></pre>
+
+    <h2>3. Tasks</h2>
+    <div id="tasks-status">Loading...</div>
+    <div id="tasks-count"></div>
+
+    <script>
+        // Test recurring tasks
+        fetch('recurring-tasks.json?t=' + Date.now())
+            .then(response => {
+                console.log('Recurring response:', response);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Recurring data:', data);
+                document.getElementById('recurring-status').innerHTML = '<span class="success">✅ Loaded successfully</span>';
+                document.getElementById('recurring-count').textContent = `Found ${data.length} recurring tasks`;
+                document.getElementById('recurring-preview').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Recurring error:', error);
+                document.getElementById('recurring-status').innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            });
+
+        // Test calendar
+        fetch('apple-calendar-cache.json?t=' + Date.now())
+            .then(response => {
+                console.log('Calendar response:', response);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Calendar data - events count:', data.events.length);
+                document.getElementById('calendar-status').innerHTML = '<span class="success">✅ Loaded successfully</span>';
+                document.getElementById('calendar-count').textContent = `Last sync: ${data.lastSync}, ${data.events.length} total events`;
+
+                // Show today's events
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const todayEvents = data.events.filter(event => {
+                    const start = new Date(event.startDate);
+                    return start >= today && start < tomorrow;
+                });
+
+                document.getElementById('calendar-preview').textContent = `Today: ${todayEvents.length} events\n\n` +
+                    todayEvents.slice(0, 5).map(e => `${e.startDate} - ${e.summary}`).join('\n');
+            })
+            .catch(error => {
+                console.error('Calendar error:', error);
+                document.getElementById('calendar-status').innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            });
+
+        // Test tasks
+        fetch('tasks.json?t=' + Date.now())
+            .then(response => {
+                console.log('Tasks response:', response);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Tasks data:', data.length, 'tasks');
+                document.getElementById('tasks-status').innerHTML = '<span class="success">✅ Loaded successfully</span>';
+                document.getElementById('tasks-count').textContent = `Found ${data.length} tasks`;
+            })
+            .catch(error => {
+                console.error('Tasks error:', error);
+                document.getElementById('tasks-status').innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            });
+    </script>
+</body>
+</html>

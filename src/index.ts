@@ -24,15 +24,18 @@ import {
   writeGoalsSnapshot,
   writeGroupsSnapshot,
   writeHelpRequestsSnapshot,
+  writeProjectsSnapshot,
   writeTasksSnapshot,
 } from './container-runner.js';
 import {
   createGoal,
   createHelpRequest,
+  createProject,
   createTask,
   deleteTask,
   getAllChats,
   getAllGoals,
+  getAllProjects,
   getAllRegisteredGroups,
   getAllSessions,
   getAllTasks,
@@ -40,6 +43,8 @@ import {
   getLastGroupSync,
   getMessagesSince,
   getNewMessages,
+  getProjectById,
+  getProjectsForGroup,
   getRouterState,
   getTaskById,
   initDatabase,
@@ -51,12 +56,13 @@ import {
   storeMessage,
   updateChatName,
   updateGoal,
+  updateProject,
   updateTask,
 } from './db.js';
 import { writeDashboardData } from './dashboard-writer.js';
 import { GroupQueue } from './group-queue.js';
 import { startSchedulerLoop } from './task-scheduler.js';
-import { Goal, RegisteredGroup } from './types.js';
+import { Goal, Project, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
 
 const GROUP_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -294,6 +300,20 @@ async function runAgent(
     })),
   );
 
+  // Update projects snapshot for container to read
+  const projects = getAllProjects();
+  writeProjectsSnapshot(
+    group.folder,
+    isMain,
+    projects.map((p) => ({
+      id: p.id,
+      group_folder: p.group_folder,
+      name: p.name,
+      description: p.description,
+      status: p.status,
+    })),
+  );
+
   // Update available groups snapshot (main group only can see all groups)
   const availableGroups = getAvailableGroups();
   writeGroupsSnapshot(
@@ -489,6 +509,21 @@ function startIpcWatcher(): void {
   logger.info('IPC watcher started (per-group namespaces)');
 }
 
+function writeProjectsSnapshotForGroup(groupFolder: string, isMain: boolean): void {
+  const projects = getAllProjects();
+  writeProjectsSnapshot(
+    groupFolder,
+    isMain,
+    projects.map((p) => ({
+      id: p.id,
+      group_folder: p.group_folder,
+      name: p.name,
+      description: p.description,
+      status: p.status,
+    })),
+  );
+}
+
 function writeGoalsSnapshotForGroup(groupFolder: string, isMain: boolean): void {
   const goals = getAllGoals();
   writeGoalsSnapshot(
@@ -521,6 +556,7 @@ async function processTaskIpc(
     goal_id?: string;
     depends_on?: string;
     timeout?: number;
+    parent_task_id?: string;
     // For register_group
     jid?: string;
     name?: string;
@@ -536,6 +572,9 @@ async function processTaskIpc(
     deadline?: string;
     status?: string;
     progress?: number;
+    project_id?: string;
+    // For projects
+    projectId?: string;
     // For help requests
     request_type?: string;
     task_id?: string;
@@ -635,6 +674,7 @@ async function processTaskIpc(
           goal_id: data.goal_id || null,
           depends_on: data.depends_on || null,
           timeout: data.timeout || null,
+          parent_task_id: data.parent_task_id || null,
         });
         logger.info(
           { taskId, sourceGroup, targetFolder, contextMode },
@@ -760,6 +800,7 @@ async function processTaskIpc(
         createGoal({
           id: data.id,
           group_folder: sourceGroup,
+          project_id: data.project_id || null,
           title: data.title,
           description: data.description || null,
           status: 'active',
@@ -829,6 +870,7 @@ async function processTaskIpc(
         createHelpRequest({
           id: helpId,
           group_folder: sourceGroup,
+          project_id: data.project_id || null,
           goal_id: data.goal_id || null,
           task_id: data.task_id || null,
           title: data.title,
@@ -856,6 +898,57 @@ async function processTaskIpc(
           { helpId, sourceGroup, type: requestType },
           'Help request created via IPC',
         );
+      }
+      break;
+
+    case 'create_project':
+      if (data.id && data.name) {
+        const now = new Date().toISOString();
+        createProject({
+          id: data.id,
+          group_folder: sourceGroup,
+          name: data.name,
+          description: data.description || null,
+          status: 'active',
+          created_at: now,
+          updated_at: now,
+        });
+        writeProjectsSnapshotForGroup(sourceGroup, isMain);
+        logger.info(
+          { projectId: data.id, sourceGroup },
+          'Project created via IPC',
+        );
+        writeDashboardData(sourceGroup);
+      }
+      break;
+
+    case 'update_project':
+      if (data.projectId) {
+        const project = getProjectById(data.projectId);
+        if (project && (isMain || project.group_folder === sourceGroup)) {
+          const projectUpdates: Partial<Pick<Project, 'name' | 'description' | 'status'>> = {};
+          if (data.name !== undefined) {
+            projectUpdates.name = data.name;
+          }
+          if (data.description !== undefined) {
+            projectUpdates.description = data.description;
+          }
+          if (data.status && ['active', 'paused', 'completed', 'archived'].includes(data.status)) {
+            projectUpdates.status = data.status as Project['status'];
+          }
+          updateProject(data.projectId, projectUpdates);
+          writeProjectsSnapshotForGroup(sourceGroup, isMain);
+          logger.info(
+            { projectId: data.projectId, sourceGroup },
+            'Project updated via IPC',
+          );
+          writeDashboardData(project.group_folder);
+        } else {
+          logger.warn(
+            { projectId: data.projectId, sourceGroup },
+            'Unauthorized project update attempt',
+          );
+        }
       }
       break;
 

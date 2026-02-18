@@ -10,10 +10,12 @@ import { GROUPS_DIR } from './config.js';
 import {
   getAllGoals,
   getAllTasks,
+  getAllHelpRequests,
   getGoalsForGroup,
+  getProjectsForGroup,
   getTasksForGroup,
 } from './db.js';
-import { Goal, ScheduledTask } from './types.js';
+import { Goal, HelpRequest, Project, ScheduledTask } from './types.js';
 
 export function writeDashboardData(groupFolder: string): void {
   const groupDir = path.join(GROUPS_DIR, groupFolder);
@@ -21,12 +23,104 @@ export function writeDashboardData(groupFolder: string): void {
     fs.mkdirSync(groupDir, { recursive: true });
   }
 
+  const projects = getProjectsForGroup(groupFolder);
   const goals = getGoalsForGroup(groupFolder);
   const tasks = getTasksForGroup(groupFolder);
 
+  const helpRequests = getAllHelpRequests();
+
+  writeProjectsJson(groupDir, projects, goals, tasks);
   writeGoalsJson(groupDir, goals, tasks);
   writeRecurringTasksJson(groupDir, tasks);
-  writeActivityFeedJson(groupDir, goals, tasks);
+  writeActivityFeedJson(groupDir, projects, goals, tasks);
+  writeRequestsJson(groupDir, helpRequests);
+}
+
+function writeProjectsJson(
+  groupDir: string,
+  projects: Project[],
+  goals: Goal[],
+  tasks: ScheduledTask[],
+): void {
+  const projectsWithHierarchy = projects.map((p) => {
+    const projectGoals = goals.filter((g) => g.project_id === p.id);
+    return {
+      ...p,
+      goals: projectGoals.map((g) => {
+        const goalTasks = tasks
+          .filter((t) => t.goal_id === g.id && !t.parent_task_id)
+          .map((t) => ({
+            id: t.id,
+            prompt: t.prompt,
+            schedule_type: t.schedule_type,
+            schedule_value: t.schedule_value,
+            status: t.status,
+            next_run: t.next_run,
+            last_run: t.last_run,
+            last_result: t.last_result,
+            subtasks: tasks
+              .filter((st) => st.parent_task_id === t.id)
+              .map((st) => ({
+                id: st.id,
+                prompt: st.prompt,
+                schedule_type: st.schedule_type,
+                schedule_value: st.schedule_value,
+                status: st.status,
+                next_run: st.next_run,
+                last_run: st.last_run,
+                last_result: st.last_result,
+              })),
+          }));
+        return {
+          ...g,
+          tasks: goalTasks,
+        };
+      }),
+    };
+  });
+
+  // Include orphaned goals (no project_id)
+  const orphanedGoals = goals
+    .filter((g) => !g.project_id)
+    .map((g) => ({
+      ...g,
+      tasks: tasks
+        .filter((t) => t.goal_id === g.id && !t.parent_task_id)
+        .map((t) => ({
+          id: t.id,
+          prompt: t.prompt,
+          schedule_type: t.schedule_type,
+          schedule_value: t.schedule_value,
+          status: t.status,
+          next_run: t.next_run,
+          last_run: t.last_run,
+          last_result: t.last_result,
+          subtasks: tasks
+            .filter((st) => st.parent_task_id === t.id)
+            .map((st) => ({
+              id: st.id,
+              prompt: st.prompt,
+              schedule_type: st.schedule_type,
+              schedule_value: st.schedule_value,
+              status: st.status,
+              next_run: st.next_run,
+              last_run: st.last_run,
+              last_result: st.last_result,
+            })),
+        })),
+    }));
+
+  fs.writeFileSync(
+    path.join(groupDir, 'projects.json'),
+    JSON.stringify(
+      {
+        projects: projectsWithHierarchy,
+        orphanedGoals,
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 function writeGoalsJson(
@@ -82,6 +176,7 @@ function writeRecurringTasksJson(
 
 function writeActivityFeedJson(
   groupDir: string,
+  projects: Project[],
   goals: Goal[],
   tasks: ScheduledTask[],
 ): void {
@@ -91,6 +186,24 @@ function writeActivityFeedJson(
     title: string;
     details: string;
   }> = [];
+
+  // Project events
+  for (const project of projects) {
+    feed.push({
+      type: 'project_created',
+      timestamp: project.created_at,
+      title: `Project created: ${project.name}`,
+      details: project.description ? project.description.slice(0, 100) : '',
+    });
+    if (project.status === 'completed') {
+      feed.push({
+        type: 'project_completed',
+        timestamp: project.updated_at,
+        title: `Project completed: ${project.name}`,
+        details: 'Marked as completed',
+      });
+    }
+  }
 
   // Goal events
   for (const goal of goals) {
@@ -167,5 +280,15 @@ function writeActivityFeedJson(
   fs.writeFileSync(
     path.join(groupDir, 'activity-feed.json'),
     JSON.stringify(feed, null, 2),
+  );
+}
+
+function writeRequestsJson(
+  groupDir: string,
+  helpRequests: HelpRequest[],
+): void {
+  fs.writeFileSync(
+    path.join(groupDir, 'requests.json'),
+    JSON.stringify(helpRequests, null, 2),
   );
 }

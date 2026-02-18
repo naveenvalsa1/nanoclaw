@@ -1026,7 +1026,7 @@ img {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-5);
   margin-bottom: var(--space-8);
 }
@@ -2598,6 +2598,223 @@ img {
 }
 
 /* ============================================================
+   Component: Project Cards (Accordion Style)
+   ============================================================ */
+.project-section {
+  background: var(--color-card-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+  animation: slideIn 0.3s var(--ease-default);
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.project-header:hover {
+  background: var(--color-elevated-surface);
+}
+
+.project-chevron {
+  transition: transform var(--transition-normal);
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.project-section.open .project-chevron {
+  transform: rotate(180deg);
+}
+
+.project-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-name {
+  font-size: var(--text-card-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+}
+
+.project-desc {
+  font-size: var(--text-badge);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.project-status-pill {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+}
+
+.project-status-pill.active { background: rgba(16, 185, 129, 0.15); color: var(--color-success); }
+.project-status-pill.paused { background: rgba(245, 158, 11, 0.15); color: var(--color-warning); }
+.project-status-pill.completed { background: rgba(59, 130, 246, 0.15); color: var(--color-info); }
+.project-status-pill.archived { background: rgba(139, 139, 160, 0.15); color: var(--color-text-tertiary); }
+
+.project-goal-count {
+  font-size: var(--text-badge);
+  color: var(--color-text-tertiary);
+}
+
+.project-body {
+  display: none;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-5);
+}
+
+.project-section.open .project-body {
+  display: block;
+}
+
+.project-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.project-goal-item {
+  background: var(--color-elevated-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.project-goal-item:hover {
+  background: var(--color-surface);
+}
+
+.project-goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.project-goal-title {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-goal-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--color-card-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.project-goal-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-gradient);
+  transition: width 0.5s var(--ease-default);
+}
+
+.project-goal-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-badge);
+  color: var(--color-text-tertiary);
+}
+
+.project-task-list {
+  margin-top: var(--space-3);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.project-task-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-badge);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) 0;
+}
+
+.project-task-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.project-task-dot.active, .project-task-dot.progress { background: var(--color-success); }
+.project-task-dot.backlog { background: var(--color-accent); }
+.project-task-dot.completed { background: var(--color-info); }
+.project-task-dot.paused { background: var(--color-warning); }
+
+.project-task-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-task-subtask-count {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.project-empty-goals {
+  font-size: var(--text-body);
+  color: var(--color-text-tertiary);
+  padding: var(--space-3) 0;
+  text-align: center;
+}
+
+.unlinked-goals-section {
+  margin-top: var(--space-6);
+}
+
+.unlinked-goals-header {
+  font-size: var(--text-section-title);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ============================================================
    Component: Activity Timeline
    ============================================================ */
 .activity-timeline {
@@ -3948,6 +4165,11 @@ img {
         <span class="nav-label">Home</span>
         <span class="nav-badge"></span>
       </div>
+      <div class="nav-item" data-view="projects" onclick="switchView('projects')">
+        <span class="nav-icon"></span>
+        <span class="nav-label">Projects</span>
+        <span class="nav-badge" id="nav-projects-count"></span>
+      </div>
       <div class="nav-item" data-view="goals" onclick="switchView('goals')">
         <span class="nav-icon"></span>
         <span class="nav-label">Goals</span>
@@ -3967,6 +4189,11 @@ img {
         <span class="nav-icon"></span>
         <span class="nav-label">Recurring</span>
         <span class="nav-badge" id="nav-recurring-count"></span>
+      </div>
+      <div class="nav-item" data-view="requests" onclick="switchView('requests')">
+        <span class="nav-icon"></span>
+        <span class="nav-label">Requests</span>
+        <span class="nav-badge" id="nav-requests-count"></span>
       </div>
       <div class="nav-item" data-view="activity" onclick="switchView('activity')">
         <span class="nav-icon"></span>
@@ -4045,6 +4272,11 @@ img {
       </div>
 
       <div class="stats-grid">
+        <div class="stat-card" onclick="switchView('projects')">
+          <div class="stat-icon" style="color:#a78bfa"></div>
+          <div class="stat-value" id="statActiveProjects">0</div>
+          <div class="stat-label">Active Projects</div>
+        </div>
         <div class="stat-card" onclick="switchView('goals')">
           <div class="stat-icon" style="color:#6366f1"></div>
           <div class="stat-value" id="statActiveGoals">0</div>
@@ -4137,6 +4369,23 @@ img {
       </div>
     </div>
 
+    <!-- PROJECTS VIEW -->
+    <div class="view-container" id="projectsView" style="display:none">
+      <div class="goals-toolbar">
+        <select class="task-filter-select" id="projectStatusFilter" onchange="renderProjectsView()">
+          <option value="all">All Projects</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="completed">Completed</option>
+          <option value="archived">Archived</option>
+        </select>
+        <button class="btn btn-primary" onclick="openNewProjectModal()" style="margin-left:auto">
+          <span data-inject-icon="plus" data-icon-size="16"></span> New Project
+        </button>
+      </div>
+      <div id="projectsContainer"></div>
+    </div>
+
     <!-- GOALS VIEW -->
     <div class="view-container" id="goalsView" style="display:none">
       <div class="goals-toolbar">
@@ -4176,6 +4425,11 @@ img {
     <!-- RECURRING VIEW -->
     <div class="view-container" id="recurringView" style="display:none">
       <div class="recurring-grid" id="recurringGrid"></div>
+    </div>
+
+    <!-- REQUESTS VIEW -->
+    <div class="view-container" id="requestsView" style="display:none">
+      <div id="requestsGrid"></div>
     </div>
 
     <!-- ACTIVITY VIEW -->
@@ -4336,6 +4590,42 @@ img {
   </div>
 </div>
 
+<!-- Project Modal (Create / Edit) -->
+<div class="modal" id="projectModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="projectModalTitle">New Project</h2>
+      <button class="btn-icon" onclick="closeProjectModal()"><span data-inject-icon="x" data-icon-size="20"></span></button>
+    </div>
+    <form id="projectForm" onsubmit="return saveProject(event)">
+      <div class="modal-body">
+        <input type="hidden" id="projectEditId">
+        <div class="form-group">
+          <label class="form-label">Name *</label>
+          <input type="text" class="form-input" id="projectName" required placeholder="e.g. Zournal, Notion Press">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="projectDescription" rows="3" placeholder="What is this project about?"></textarea>
+        </div>
+        <div class="form-group" id="projectStatusGroup" style="display:none">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="projectStatusEdit">
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeProjectModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="projectSubmitBtn">Create Project</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Command Palette -->
 <div class="command-palette" id="commandPalette" onclick="if(event.target===this)closeCommandPalette()">
   <div class="command-palette-inner">
@@ -4354,10 +4644,11 @@ img {
     <div class="shortcut-row"><span>Command Palette</span><kbd>&#8984;K</kbd></div>
     <div class="shortcut-row"><span>New Task</span><kbd>&#8984;N</kbd></div>
     <div class="shortcut-row"><span>Home</span><kbd>1</kbd></div>
-    <div class="shortcut-row"><span>Tasks</span><kbd>2</kbd></div>
-    <div class="shortcut-row"><span>Calendar</span><kbd>3</kbd></div>
-    <div class="shortcut-row"><span>Recurring</span><kbd>4</kbd></div>
-    <div class="shortcut-row"><span>Activity</span><kbd>5</kbd></div>
+    <div class="shortcut-row"><span>Projects</span><kbd>2</kbd></div>
+    <div class="shortcut-row"><span>Tasks</span><kbd>3</kbd></div>
+    <div class="shortcut-row"><span>Calendar</span><kbd>4</kbd></div>
+    <div class="shortcut-row"><span>Recurring</span><kbd>5</kbd></div>
+    <div class="shortcut-row"><span>Activity</span><kbd>6</kbd></div>
     <div class="shortcut-row"><span>Toggle Theme</span><kbd>D</kbd></div>
     <div class="shortcut-row"><span>Close / Dismiss</span><kbd>Esc</kbd></div>
     <div class="shortcut-row"><span>This Help</span><kbd>?</kbd></div>
@@ -4480,6 +4771,15 @@ function getIcon(name, size = 20) {
 
     // List
     list: `<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>`,
+
+    // Folder (projects)
+    projects: `<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>`,
+
+    // Help circle (requests)
+    requests: `<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
+
+    // Chevron down (collapsible)
+    'chevron-down': `<polyline points="6 9 12 15 18 9"/>`,
   };
 
   const svgContent = icons[name] || '';
@@ -4499,7 +4799,8 @@ const AppState = {
   todayEvents: [],            // Filtered for today only
   activityFeed: [],           // Recent activity entries
   goals: [],                  // Goals with linked tasks (merged)
-  // goals loaded directly from API (SQLite)
+  projects: { projects: [], orphanedGoals: [] },  // Projects hierarchy from projects.json
+  helpRequests: [],           // Help requests from Andy
   notifications: [],          // Notification items
   currentView: 'home',       // Active view: 'home' | 'tasks' | 'calendar' | 'recurring' | 'activity' | 'goals'
   theme: localStorage.getItem('andy_theme') || 'auto',  // 'auto' | 'light' | 'dark'
@@ -4876,6 +5177,58 @@ async function loadGoals() {
   }
 }
 
+async function loadRequests() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch('http://localhost:3001/requests', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      AppState.helpRequests = await res.json();
+    }
+  } catch(e) {
+    try {
+      const fallback = await fetch('requests.json?t=' + Date.now());
+      if (fallback.ok) {
+        AppState.helpRequests = await fallback.json();
+      }
+    } catch(e2) {
+      AppState.helpRequests = AppState.helpRequests || [];
+    }
+  }
+}
+
+async function loadProjects() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch('http://localhost:3001/projects', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      AppState.projects = {
+        projects: data.projects || [],
+        orphanedGoals: data.orphanedGoals || []
+      };
+      return;
+    }
+  } catch(e) {
+    // API not available — fall back to static file
+  }
+  try {
+    const fallback = await fetch('projects.json?t=' + Date.now());
+    if (fallback.ok) {
+      const data = await fallback.json();
+      AppState.projects = {
+        projects: data.projects || [],
+        orphanedGoals: data.orphanedGoals || []
+      };
+    }
+  } catch(e2) {
+    // projects.json may not exist yet
+  }
+}
+
 function computeNotifications() {
   const notifs = [];
   const now = new Date();
@@ -4951,7 +5304,9 @@ async function refreshAllData() {
     loadCalendarEvents(),
     loadActivityFeed(),
     loadAgentStatus(),
-    loadGoals()
+    loadGoals(),
+    loadRequests(),
+    loadProjects()
   ]);
   computeNotifications();
   updateNavBadges();
@@ -4961,6 +5316,11 @@ async function refreshAllData() {
 }
 
 function updateNavBadges() {
+  const projectBadge = document.getElementById('nav-projects-count');
+  if (projectBadge) {
+    const count = (AppState.projects.projects || []).filter(p => p.status === 'active').length;
+    projectBadge.textContent = count > 0 ? count : '';
+  }
   const taskBadge = document.getElementById('nav-tasks-count');
   if (taskBadge) {
     const count = AppState.tasks.filter(t => t.status === 'backlog' || t.status === 'progress').length;
@@ -4981,6 +5341,11 @@ function updateNavBadges() {
     const count = AppState.recurringTasks.filter(t => t.status === 'active').length;
     recurBadge.textContent = count > 0 ? count : '';
   }
+  const requestsBadge = document.getElementById('nav-requests-count');
+  if (requestsBadge) {
+    const count = (AppState.helpRequests || []).filter(r => r.status === 'open').length;
+    requestsBadge.textContent = count > 0 ? count : '';
+  }
 }
 
 // ============================================================
@@ -4996,15 +5361,15 @@ function switchView(view) {
   });
 
   // Hide all views, show current
-  const views = ['homeView', 'tasksView', 'goalsView', 'calendarView', 'recurringView', 'activityView'];
-  const viewMap = { home: 'homeView', tasks: 'tasksView', goals: 'goalsView', calendar: 'calendarView', recurring: 'recurringView', activity: 'activityView' };
+  const views = ['homeView', 'projectsView', 'tasksView', 'goalsView', 'calendarView', 'recurringView', 'requestsView', 'activityView'];
+  const viewMap = { home: 'homeView', projects: 'projectsView', tasks: 'tasksView', goals: 'goalsView', calendar: 'calendarView', recurring: 'recurringView', requests: 'requestsView', activity: 'activityView' };
   views.forEach(v => {
     document.getElementById(v).style.display = 'none';
   });
   document.getElementById(viewMap[view]).style.display = 'block';
 
   // Update title
-  const titles = { home: 'Home', tasks: 'Tasks', goals: 'Goals', calendar: 'Calendar', recurring: 'Recurring Tasks', activity: 'Activity' };
+  const titles = { home: 'Home', projects: 'Projects', tasks: 'Tasks', goals: 'Goals', calendar: 'Calendar', recurring: 'Recurring Tasks', requests: 'Requests', activity: 'Activity' };
   document.getElementById('viewTitle').textContent = titles[view] || view;
 
   renderCurrentView();
@@ -5016,12 +5381,99 @@ function switchView(view) {
 function renderCurrentView() {
   switch(AppState.currentView) {
     case 'home': renderHomeView(); break;
+    case 'projects': renderProjectsView(); break;
     case 'tasks': renderTasksView(); break;
     case 'goals': renderGoalsView(); break;
     case 'calendar': renderCalendarView(); break;
     case 'recurring': renderRecurringView(); break;
+    case 'requests': renderRequestsView(); break;
     case 'activity': renderActivityView(); break;
   }
+}
+
+// ============================================================
+// Requests View
+// ============================================================
+
+function renderRequestsView() {
+  const container = document.getElementById('requestsGrid');
+  if (!container) return;
+
+  const requests = AppState.helpRequests || [];
+  if (requests.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:var(--space-12); color:var(--color-text-secondary);">No help requests yet. Andy will ask for help here when blocked.</div>';
+    return;
+  }
+
+  const typeColors = { blocker: '#ef4444', question: '#3b82f6', access: '#f59e0b', integration: '#8b5cf6' };
+  const typeIcons = { blocker: 'alert-circle', question: 'help-circle', access: 'key', integration: 'plug' };
+
+  container.innerHTML = requests.map(r => {
+    const color = typeColors[r.request_type] || '#6366f1';
+    const isOpen = r.status === 'open';
+    const timeAgo = formatTimeAgo(new Date(r.created_at));
+
+    return `
+      <div class="card" style="margin-bottom:var(--space-4); border-left: 3px solid ${color}; ${!isOpen ? 'opacity:0.7;' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--space-2);">
+          <div>
+            <span style="display:inline-block; padding:2px 8px; border-radius:var(--radius-full); background:${color}20; color:${color}; font-size:var(--text-badge); font-weight:600; text-transform:uppercase; margin-bottom:var(--space-1);">${r.request_type}</span>
+            <span style="display:inline-block; padding:2px 8px; border-radius:var(--radius-full); background:${isOpen ? 'var(--color-warning)' : 'var(--color-success)'}20; color:${isOpen ? 'var(--color-warning)' : 'var(--color-success)'}; font-size:var(--text-badge); font-weight:600; text-transform:uppercase; margin-left:var(--space-1);">${r.status}</span>
+          </div>
+          <span style="font-size:var(--text-badge); color:var(--color-text-tertiary);">${timeAgo}</span>
+        </div>
+        <h3 style="font-size:var(--text-card-title); margin:var(--space-2) 0; color:var(--color-text-primary);">${escapeHtml(r.title)}</h3>
+        <p style="font-size:var(--text-body); color:var(--color-text-secondary); margin-bottom:var(--space-3); line-height:var(--leading-relaxed);">${escapeHtml(r.description)}</p>
+        ${r.goal_id ? `<div style="font-size:var(--text-badge); color:var(--color-text-tertiary); margin-bottom:var(--space-2);">Goal: ${escapeHtml(r.goal_id)}</div>` : ''}
+        ${r.task_id ? `<div style="font-size:var(--text-badge); color:var(--color-text-tertiary); margin-bottom:var(--space-2);">Task: ${escapeHtml(r.task_id)}</div>` : ''}
+        ${r.response ? `
+          <div style="background:var(--color-elevated-surface); border-radius:var(--radius-md); padding:var(--space-3); margin-top:var(--space-2);">
+            <div style="font-size:var(--text-badge); color:var(--color-success); font-weight:600; margin-bottom:var(--space-1);">YOUR RESPONSE</div>
+            <div style="font-size:var(--text-body); color:var(--color-text-primary);">${escapeHtml(r.response)}</div>
+          </div>
+        ` : ''}
+        ${isOpen ? `
+          <div style="margin-top:var(--space-3); display:flex; gap:var(--space-2);">
+            <input type="text" id="response-${r.id}" placeholder="Type your response..." style="flex:1; padding:var(--space-2) var(--space-3); border-radius:var(--radius-md); border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text-primary); font-size:var(--text-body);" onkeydown="if(event.key==='Enter')respondToRequest('${r.id}')">
+            <button class="btn btn-primary" onclick="respondToRequest('${r.id}')" style="white-space:nowrap;">Respond</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function respondToRequest(requestId) {
+  const input = document.getElementById('response-' + requestId);
+  if (!input || !input.value.trim()) return;
+
+  try {
+    const res = await fetch('http://localhost:3001/requests/' + requestId + '/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response: input.value.trim() })
+    });
+    if (res.ok) {
+      await loadRequests();
+      updateNavBadges();
+      renderRequestsView();
+      if (AppState.currentView === 'home') renderHomeView();
+    }
+  } catch(e) {
+    console.error('Failed to respond to request:', e);
+  }
+}
+
+function formatTimeAgo(date) {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return minutes + 'm ago';
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + 'h ago';
+  const days = Math.floor(hours / 24);
+  return days + 'd ago';
 }
 
 // ============================================================
@@ -5160,13 +5612,41 @@ function renderHomeView() {
     });
   }
 
+  // -- Help requests banner --
+  const openRequests = (AppState.helpRequests || []).filter(r => r.status === 'open');
+  let helpBannerEl = document.getElementById('homeHelpBanner');
+  if (!helpBannerEl) {
+    helpBannerEl = document.createElement('div');
+    helpBannerEl.id = 'homeHelpBanner';
+    const greetingEl2 = document.getElementById('greetingText');
+    if (greetingEl2 && greetingEl2.parentElement && greetingEl2.parentElement.parentElement) {
+      greetingEl2.parentElement.parentElement.parentElement.insertBefore(helpBannerEl, greetingEl2.parentElement.parentElement.nextSibling);
+    }
+  }
+  if (openRequests.length > 0) {
+    helpBannerEl.style.display = 'block';
+    helpBannerEl.innerHTML = `
+      <div onclick="switchView('requests')" style="cursor:pointer; background:linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.1)); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-lg); padding:var(--space-4) var(--space-5); margin-bottom:var(--space-5); display:flex; align-items:center; gap:var(--space-3);">
+        <div style="font-size:24px;">&#9888;</div>
+        <div>
+          <div style="font-weight:600; color:var(--color-text-primary); font-size:var(--text-card-title);">Andy needs your help</div>
+          <div style="color:var(--color-text-secondary); font-size:var(--text-body);">${openRequests.length} open request${openRequests.length !== 1 ? 's' : ''} — click to respond</div>
+        </div>
+      </div>`;
+  } else {
+    helpBannerEl.style.display = 'none';
+    helpBannerEl.innerHTML = '';
+  }
+
   // -- Stat counters --
+  const activeProjects = (AppState.projects.projects || []).filter(p => p.status === 'active').length;
   const activeTasks = AppState.tasks.filter(t => t.status === 'backlog' || t.status === 'progress').length;
   const todayEventsCount = AppState.todayEvents.length;
   const recurringCount = AppState.recurringTasks.length;
   const allGoals = AppState.goals || [];
   const activeGoals = allGoals.filter(g => g.status === 'active');
 
+  animateCounter('statActiveProjects', activeProjects);
   animateCounter('statActiveGoals', activeGoals.length);
   animateCounter('statActiveTasks', activeTasks);
   animateCounter('statTodayEvents', todayEventsCount);
@@ -6288,6 +6768,143 @@ function filterActivity(type) {
   renderActivityView();
 }
 // ============================================================
+// Projects View
+// ============================================================
+
+function toggleProject(projectId) {
+  const el = document.getElementById('project-' + projectId);
+  if (el) el.classList.toggle('open');
+}
+
+function renderProjectsView() {
+  const container = document.getElementById('projectsContainer');
+  if (!container) return;
+
+  const filter = document.getElementById('projectStatusFilter')?.value || 'all';
+  let projects = AppState.projects.projects || [];
+  const orphanedGoals = AppState.projects.orphanedGoals || [];
+
+  if (filter !== 'all') {
+    projects = projects.filter(p => p.status === filter);
+  }
+
+  if (projects.length === 0 && orphanedGoals.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">${getIcon('projects', 40)}</div>
+        <p>${filter === 'all' ? 'No projects yet. Tell Andy to create a project to organize your goals!' : 'No ' + filter + ' projects.'}</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Render each project as a collapsible section
+  projects.forEach(project => {
+    const goals = project.goals || [];
+    const goalCount = goals.length;
+    const isOpen = projects.length <= 3 ? ' open' : '';
+
+    html += `
+      <div class="project-section${isOpen}" id="project-${project.id}">
+        <div class="project-header" onclick="toggleProject('${project.id}')">
+          <span class="project-chevron">${getIcon('chevron-down', 18)}</span>
+          <div class="project-header-info">
+            <div class="project-name">${escapeHtml(project.name || project.title || project.id)}</div>
+            ${project.description ? `<div class="project-desc">${escapeHtml(project.description)}</div>` : ''}
+          </div>
+          <div class="project-header-meta">
+            <span class="project-status-pill ${project.status}">${project.status}</span>
+            <span class="project-goal-count">${goalCount} goal${goalCount !== 1 ? 's' : ''}</span>
+            <button class="btn-icon" onclick="event.stopPropagation(); openEditProjectModal('${project.id}')" title="Edit project" style="color:var(--color-text-tertiary)">${getIcon('edit', 16)}</button>
+            <button class="btn-icon" onclick="event.stopPropagation(); confirmDeleteProject('${project.id}', '${escapeHtml(project.name || project.id)}')" title="Delete project" style="color:var(--color-text-tertiary)">${getIcon('trash', 16)}</button>
+          </div>
+        </div>
+        <div class="project-body">`;
+
+    if (goals.length === 0) {
+      html += `<div class="project-empty-goals">No goals linked to this project yet</div>`;
+    } else {
+      html += `<div class="project-goals-list">`;
+      goals.forEach(goal => {
+        const tasks = goal.tasks || [];
+        const taskCount = tasks.length;
+        const completedTasks = tasks.filter(t => t.status === 'completed').length;
+
+        html += `
+          <div class="project-goal-item" onclick="event.stopPropagation(); openGoalSideSheet('${goal.id}')">
+            <div class="project-goal-header">
+              <div class="project-goal-title">${escapeHtml(goal.title)}</div>
+              <span class="goal-status-pill ${goal.status}">${goal.status}</span>
+            </div>
+            <div class="project-goal-progress">
+              <div class="project-goal-progress-fill" style="width: ${goal.progress || 0}%"></div>
+            </div>
+            <div class="project-goal-meta">
+              <span>${goal.progress || 0}%</span>
+              ${taskCount > 0 ? `<span>${completedTasks}/${taskCount} tasks</span>` : '<span>No tasks</span>'}
+              ${goal.priority ? `<span class="goal-priority-badge ${goal.priority}" style="font-size:10px; padding:1px 6px;">${goal.priority}</span>` : ''}
+            </div>`;
+
+        // Render tasks nested under the goal
+        if (tasks.length > 0) {
+          html += `<div class="project-task-list">`;
+          tasks.forEach(task => {
+            const subtasks = task.subtasks || [];
+            const taskTitle = task.title || task.prompt || 'Untitled task';
+            html += `
+              <div class="project-task-item">
+                <span class="project-task-dot ${task.status || 'backlog'}"></span>
+                <span class="project-task-name">${escapeHtml(typeof taskTitle === 'string' ? taskTitle.split('\\n')[0].slice(0, 80) : String(taskTitle))}</span>
+                ${subtasks.length > 0 ? `<span class="project-task-subtask-count">${subtasks.length} subtask${subtasks.length !== 1 ? 's' : ''}</span>` : ''}
+              </div>`;
+          });
+          html += `</div>`;
+        }
+
+        html += `</div>`; // close project-goal-item
+      });
+      html += `</div>`; // close project-goals-list
+    }
+
+    html += `</div></div>`; // close project-body and project-section
+  });
+
+  // Render orphaned goals (not linked to any project)
+  if (orphanedGoals.length > 0 && filter === 'all') {
+    html += `
+      <div class="unlinked-goals-section">
+        <div class="unlinked-goals-header">
+          ${getIcon('target', 20)} Unlinked Goals
+        </div>
+        <div class="goals-grid">`;
+    orphanedGoals.forEach(goal => {
+      const taskCount = (goal.tasks || []).length;
+      html += `
+        <div class="goal-card priority-${goal.priority || 'medium'}" onclick="openGoalSideSheet('${goal.id}')">
+          <div class="goal-card-header">
+            <div class="goal-card-title">${escapeHtml(goal.title)}</div>
+            <span class="goal-priority-badge ${goal.priority || 'medium'}">${goal.priority || 'medium'}</span>
+          </div>
+          <div class="goal-progress-bar">
+            <div class="goal-progress-fill" style="width: ${goal.progress || 0}%"></div>
+          </div>
+          <div class="goal-card-footer">
+            <span class="goal-status-pill ${goal.status}">${goal.status}</span>
+            <div class="goal-meta">
+              <span class="goal-progress-text">${goal.progress || 0}%</span>
+              ${taskCount > 0 ? `<span class="goal-tasks-badge">${getIcon('list', 12)} ${taskCount} task${taskCount !== 1 ? 's' : ''}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ============================================================
 // Goals View
 // ============================================================
 
@@ -6464,6 +7081,100 @@ async function saveGoal(event) {
 }
 
 // Goals are now managed entirely via the API — no localStorage operations needed
+
+// ============================================================
+// Project Modal
+// ============================================================
+
+function openNewProjectModal() {
+  document.getElementById('projectModalTitle').textContent = 'New Project';
+  document.getElementById('projectSubmitBtn').textContent = 'Create Project';
+  document.getElementById('projectEditId').value = '';
+  document.getElementById('projectName').value = '';
+  document.getElementById('projectDescription').value = '';
+  document.getElementById('projectStatusGroup').style.display = 'none';
+  document.getElementById('projectModal').classList.add('active');
+}
+
+function openEditProjectModal(projectId) {
+  const project = (AppState.projects.projects || []).find(p => p.id === projectId);
+  if (!project) return;
+  document.getElementById('projectModalTitle').textContent = 'Edit Project';
+  document.getElementById('projectSubmitBtn').textContent = 'Save Changes';
+  document.getElementById('projectEditId').value = projectId;
+  document.getElementById('projectName').value = project.name || '';
+  document.getElementById('projectDescription').value = project.description || '';
+  document.getElementById('projectStatusEdit').value = project.status || 'active';
+  document.getElementById('projectStatusGroup').style.display = 'block';
+  document.getElementById('projectModal').classList.add('active');
+}
+
+function closeProjectModal() {
+  document.getElementById('projectModal').classList.remove('active');
+}
+
+async function saveProject(event) {
+  event.preventDefault();
+  const editId = document.getElementById('projectEditId').value;
+  const name = document.getElementById('projectName').value.trim();
+  const description = document.getElementById('projectDescription').value.trim() || null;
+
+  if (!name) return false;
+
+  try {
+    if (editId) {
+      // Update existing project
+      const status = document.getElementById('projectStatusEdit').value;
+      const res = await fetch('http://localhost:3001/projects/' + encodeURIComponent(editId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, status }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to update project');
+      }
+    } else {
+      // Create new project
+      const res = await fetch('http://localhost:3001/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create project');
+      }
+    }
+    await loadProjects();
+  } catch(e) {
+    alert(e.message || 'Failed to save project — is the API running?');
+    return false;
+  }
+
+  renderCurrentView();
+  updateNavBadges();
+  closeProjectModal();
+  return false;
+}
+
+async function confirmDeleteProject(projectId, projectName) {
+  if (!confirm('Delete "' + projectName + '"? Goals under this project will be unlinked, not deleted.')) return;
+  try {
+    const res = await fetch('http://localhost:3001/projects/' + encodeURIComponent(projectId), {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to delete project');
+    }
+    await loadProjects();
+    renderCurrentView();
+    updateNavBadges();
+  } catch(e) {
+    alert(e.message || 'Failed to delete project — is the API running?');
+  }
+}
 
 // ============================================================
 // Part 4: Interaction & Event Handling
@@ -6821,6 +7532,9 @@ function renderCommandHints() {
       <div class="command-palette-result" onclick="closeCommandPalette();switchView('home')">
         ${getIcon('home', 16)} <span>Go to Home</span>
       </div>
+      <div class="command-palette-result" onclick="closeCommandPalette();switchView('projects')">
+        ${getIcon('projects', 16)} <span>Go to Projects</span>
+      </div>
       <div class="command-palette-result" onclick="closeCommandPalette();switchView('tasks')">
         ${getIcon('tasks', 16)} <span>Go to Tasks</span>
       </div>
@@ -6871,6 +7585,20 @@ function handleCommandSearch() {
       title: e.summary,
       detail: e.allDay ? formatDate(e._start) : formatTime(e._start) + ' \u00b7 ' + formatDate(e._start),
       action: () => { closeCommandPalette(); switchView('calendar'); }
+    });
+  });
+
+  // Search projects
+  (AppState.projects.projects || []).filter(p =>
+    (p.name || p.title || '').toLowerCase().includes(query) ||
+    (p.description || '').toLowerCase().includes(query)
+  ).slice(0, 5).forEach(p => {
+    results.push({
+      type: 'project',
+      icon: 'projects',
+      title: p.name || p.title || p.id,
+      detail: p.status,
+      action: () => { closeCommandPalette(); switchView('projects'); }
     });
   });
 
@@ -6989,10 +7717,11 @@ document.addEventListener('keydown', (e) => {
 
   // Number keys 1-5 for view switching
   if (e.key === '1') switchView('home');
-  if (e.key === '2') switchView('tasks');
-  if (e.key === '3') switchView('calendar');
-  if (e.key === '4') switchView('recurring');
-  if (e.key === '5') switchView('activity');
+  if (e.key === '2') switchView('projects');
+  if (e.key === '3') switchView('tasks');
+  if (e.key === '4') switchView('calendar');
+  if (e.key === '5') switchView('recurring');
+  if (e.key === '6') switchView('activity');
 
   // D - Toggle theme
   if (e.key === 'd' || e.key === 'D') cycleTheme();

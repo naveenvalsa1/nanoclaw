@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Data Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow: auto; }
+        h2 { color: #333; margin-top: 30px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Data Test</h1>
+
+    <h2>Tasks.json</h2>
+    <div id="tasks-status"></div>
+    <pre id="tasks-data"></pre>
+
+    <h2>Recurring Tasks.json</h2>
+    <div id="recurring-status"></div>
+    <pre id="recurring-data"></pre>
+
+    <h2>Calendar.json</h2>
+    <div id="calendar-status"></div>
+    <pre id="calendar-data"></pre>
+
+    <script>
+        async function testLoad() {
+            // Test tasks.json
+            try {
+                const resp = await fetch(`tasks.json?t=${Date.now()}`);
+                if (resp.ok) {
+                    const data = await response.json();
+                    document.getElementById('tasks-status').innerHTML = '<span class="success">✅ Loaded successfully</span>';
+                    document.getElementById('tasks-data').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('tasks-status').innerHTML = `<span class="error">❌ Failed: ${resp.status}</span>`;
+                }
+            } catch (e) {
+                document.getElementById('tasks-status').innerHTML = `<span class="error">❌ Error: ${e.message}</span>`;
+            }
+
+            // Test recurring-tasks.json
+            try {
+                const resp = await fetch(`recurring-tasks.json?t=${Date.now()}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    document.getElementById('recurring-status').innerHTML = '<span class="success">✅ Loaded successfully</span>';
+                    document.getElementById('recurring-data').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('recurring-status').innerHTML = `<span class="error">❌ Failed: ${resp.status}</span>`;
+                }
+            } catch (e) {
+                document.getElementById('recurring-status').innerHTML = `<span class="error">❌ Error: ${e.message}</span>`;
+            }
+
+            // Test apple-calendar-cache.json
+            try {
+                const resp = await fetch(`apple-calendar-cache.json?t=${Date.now()}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    document.getElementById('calendar-status').innerHTML = '<span class="success">✅ Loaded successfully</span>';
+                    document.getElementById('calendar-data').textContent = JSON.stringify({
+                        lastSync: data.lastSync,
+                        eventCount: data.events.length,
+                        calendars: data.calendars
+                    }, null, 2);
+                } else {
+                    document.getElementById('calendar-status').innerHTML = `<span class="error">❌ Failed: ${resp.status}</span>`;
+                }
+            } catch (e) {
+                document.getElementById('calendar-status').innerHTML = `<span class="error">❌ Error: ${e.message}</span>`;
+            }
+        }
+
+        testLoad();
+    </script>
+</body>
+</html>

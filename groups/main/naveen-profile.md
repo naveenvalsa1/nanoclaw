@@ -27,7 +27,9 @@
 
 #### 3. Zournal - Primary Focus
 - **Type:** Accounting and finance company
-- **Model:** Human-powered, empowered by software
+- **Services:** Bookkeeping, tax, and CFO advisory services
+- **Target Customers:** Startups, SMBs, Agencies, IT services, Professional Service firms, D2C, eCommerce
+- **Model:** Human-powered, empowered by software (AI + human hybrid)
 - **Status:** First business coming out of Zero Origin (pre-launch)
 - **Website:** https://staging.zournalhq.com/
 - **Time Allocation:** Bulk of time spent here

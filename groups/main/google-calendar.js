@@ -186,11 +186,15 @@ async function updateEvent(eventId, updates) {
     if (updates.location) resource.location = updates.location;
     if (updates.start) resource.start = { dateTime: updates.start, timeZone: 'Asia/Kolkata' };
     if (updates.end) resource.end = { dateTime: updates.end, timeZone: 'Asia/Kolkata' };
+    if (updates.attendees) {
+        resource.attendees = updates.attendees.map(email => ({ email }));
+    }
 
     const response = await calendar.events.patch({
         calendarId: 'primary',
         eventId: eventId,
         resource: resource,
+        sendUpdates: 'all', // Send email notifications to attendees
     });
 
     return response.data;
@@ -402,6 +406,10 @@ if (require.main === module) {
                     const eventId = filteredArgs[1];
                     if (!eventId) { console.error('Usage: update <eventId> --summary "..."'); process.exit(1); }
                     const updateArgs = parseArgs(filteredArgs.slice(2));
+                    // Parse attendees as comma-separated list
+                    if (updateArgs.attendees) {
+                        updateArgs.attendees = updateArgs.attendees.split(',').map(e => e.trim());
+                    }
                     const updated = await updateEvent(eventId, updateArgs);
                     console.log(JSON.stringify({ success: true, eventId: updated.id, summary: updated.summary }, null, 2));
                     break;

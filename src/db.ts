@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { DATA_DIR, STORE_DIR } from './config.js';
-import { Goal, HelpRequest, NewMessage, RegisteredGroup, ScheduledTask, TaskRunLog } from './types.js';
+import { Goal, HelpRequest, NewMessage, Project, RegisteredGroup, ScheduledTask, TaskRunLog } from './types.js';
 
 let db: Database.Database;
 
@@ -90,6 +90,17 @@ export function initDatabase(): void {
       resolved_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_help_requests_status ON help_requests(status);
+
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      group_folder TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      status TEXT DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_projects_group ON projects(group_folder);
   `);
 
   // Add sender_name column if it doesn't exist (migration for existing DBs)
@@ -134,6 +145,27 @@ export function initDatabase(): void {
   // Add timeout column to scheduled_tasks if it doesn't exist
   try {
     db.exec(`ALTER TABLE scheduled_tasks ADD COLUMN timeout INTEGER`);
+  } catch {
+    /* column already exists */
+  }
+
+  // Add parent_task_id column to scheduled_tasks if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE scheduled_tasks ADD COLUMN parent_task_id TEXT`);
+  } catch {
+    /* column already exists */
+  }
+
+  // Add project_id column to goals if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE goals ADD COLUMN project_id TEXT`);
+  } catch {
+    /* column already exists */
+  }
+
+  // Add project_id column to help_requests if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE help_requests ADD COLUMN project_id TEXT`);
   } catch {
     /* column already exists */
   }
@@ -328,8 +360,8 @@ export function createTask(
 ): void {
   db.prepare(
     `
-    INSERT INTO scheduled_tasks (id, group_folder, chat_jid, prompt, schedule_type, schedule_value, context_mode, next_run, status, created_at, goal_id, depends_on, timeout)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO scheduled_tasks (id, group_folder, chat_jid, prompt, schedule_type, schedule_value, context_mode, next_run, status, created_at, goal_id, depends_on, timeout, parent_task_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     task.id,
@@ -345,6 +377,7 @@ export function createTask(
     task.goal_id || null,
     task.depends_on || null,
     task.timeout || null,
+    task.parent_task_id || null,
   );
 }
 
@@ -464,12 +497,13 @@ export function logTaskRun(log: TaskRunLog): void {
 export function createGoal(goal: Goal): void {
   db.prepare(
     `
-    INSERT INTO goals (id, group_folder, title, description, status, priority, progress, deadline, created_at, updated_at, completed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO goals (id, group_folder, project_id, title, description, status, priority, progress, deadline, created_at, updated_at, completed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     goal.id,
     goal.group_folder,
+    goal.project_id || null,
     goal.title,
     goal.description,
     goal.status,
@@ -565,17 +599,108 @@ export function getTasksForGoal(goalId: string): ScheduledTask[] {
     .all(goalId) as ScheduledTask[];
 }
 
+// --- Project accessors ---
+
+export function createProject(project: Project): void {
+  db.prepare(
+    `
+    INSERT INTO projects (id, group_folder, name, description, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `,
+  ).run(
+    project.id,
+    project.group_folder,
+    project.name,
+    project.description,
+    project.status,
+    project.created_at,
+    project.updated_at,
+  );
+}
+
+export function getProjectById(id: string): Project | undefined {
+  return db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as
+    | Project
+    | undefined;
+}
+
+export function getProjectsForGroup(groupFolder: string): Project[] {
+  return db
+    .prepare(
+      'SELECT * FROM projects WHERE group_folder = ? ORDER BY created_at DESC',
+    )
+    .all(groupFolder) as Project[];
+}
+
+export function getAllProjects(): Project[] {
+  return db
+    .prepare('SELECT * FROM projects ORDER BY created_at DESC')
+    .all() as Project[];
+}
+
+export function updateProject(
+  id: string,
+  updates: Partial<Pick<Project, 'name' | 'description' | 'status'>>,
+): void {
+  const fields: string[] = ['updated_at = ?'];
+  const values: unknown[] = [new Date().toISOString()];
+
+  if (updates.name !== undefined) {
+    fields.push('name = ?');
+    values.push(updates.name);
+  }
+  if (updates.description !== undefined) {
+    fields.push('description = ?');
+    values.push(updates.description);
+  }
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+  }
+
+  values.push(id);
+  db.prepare(
+    `UPDATE projects SET ${fields.join(', ')} WHERE id = ?`,
+  ).run(...values);
+}
+
+export function deleteProject(id: string): void {
+  // Unlink goals from this project (don't delete them)
+  db.prepare('UPDATE goals SET project_id = NULL, updated_at = ? WHERE project_id = ?').run(
+    new Date().toISOString(),
+    id,
+  );
+  db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+}
+
+export function getGoalsForProject(projectId: string): Goal[] {
+  return db
+    .prepare(
+      'SELECT * FROM goals WHERE project_id = ? ORDER BY created_at DESC',
+    )
+    .all(projectId) as Goal[];
+}
+
+export function getSubtasks(parentTaskId: string): ScheduledTask[] {
+  return db
+    .prepare(
+      'SELECT * FROM scheduled_tasks WHERE parent_task_id = ? ORDER BY created_at',
+    )
+    .all(parentTaskId) as ScheduledTask[];
+}
+
 // --- Help request accessors ---
 
 export function createHelpRequest(request: HelpRequest): void {
   db.prepare(
     `
-    INSERT INTO help_requests (id, group_folder, goal_id, task_id, title, description, request_type, status, response, created_at, updated_at, resolved_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO help_requests (id, group_folder, project_id, goal_id, task_id, title, description, request_type, status, response, created_at, updated_at, resolved_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     request.id,
     request.group_folder,
+    request.project_id || null,
     request.goal_id,
     request.task_id,
     request.title,

@@ -14,6 +14,7 @@ import {
   DATA_DIR,
   GROUPS_DIR,
 } from './config.js';
+import { getAllHelpRequests, getOpenHelpRequests } from './db.js';
 import { logger } from './logger.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
@@ -191,6 +192,7 @@ export async function runContainerAgent(
   group: RegisteredGroup,
   input: ContainerInput,
   onProcess: (proc: ChildProcess, containerName: string) => void,
+  timeoutOverride?: number,
 ): Promise<ContainerOutput> {
   const startTime = Date.now();
 
@@ -291,7 +293,7 @@ export async function runContainerAgent(
           container.kill('SIGKILL');
         }
       });
-    }, group.containerConfig?.timeout || CONTAINER_TIMEOUT);
+    }, timeoutOverride || group.containerConfig?.timeout || CONTAINER_TIMEOUT);
 
     container.on('close', (code) => {
       clearTimeout(timeout);
@@ -317,7 +319,7 @@ export async function runContainerAgent(
         resolve({
           status: 'error',
           result: null,
-          error: `Container timed out after ${group.containerConfig?.timeout || CONTAINER_TIMEOUT}ms`,
+          error: `Container timed out after ${timeoutOverride || group.containerConfig?.timeout || CONTAINER_TIMEOUT}ms`,
         });
         return;
       }
@@ -487,6 +489,53 @@ export function writeTasksSnapshot(
   fs.writeFileSync(tasksFile, JSON.stringify(filteredTasks, null, 2));
 }
 
+export function writeProjectsSnapshot(
+  groupFolder: string,
+  isMain: boolean,
+  projects: Array<{
+    id: string;
+    group_folder: string;
+    name: string;
+    description: string | null;
+    status: string;
+  }>,
+): void {
+  const groupIpcDir = path.join(DATA_DIR, 'ipc', groupFolder);
+  fs.mkdirSync(groupIpcDir, { recursive: true });
+
+  const filteredProjects = isMain
+    ? projects
+    : projects.filter((p) => p.group_folder === groupFolder);
+
+  const projectsFile = path.join(groupIpcDir, 'current_projects.json');
+  fs.writeFileSync(projectsFile, JSON.stringify(filteredProjects, null, 2));
+}
+
+export function writeGoalsSnapshot(
+  groupFolder: string,
+  isMain: boolean,
+  goals: Array<{
+    id: string;
+    group_folder: string;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: string;
+    progress: number;
+    deadline: string | null;
+  }>,
+): void {
+  const groupIpcDir = path.join(DATA_DIR, 'ipc', groupFolder);
+  fs.mkdirSync(groupIpcDir, { recursive: true });
+
+  const filteredGoals = isMain
+    ? goals
+    : goals.filter((g) => g.group_folder === groupFolder);
+
+  const goalsFile = path.join(groupIpcDir, 'current_goals.json');
+  fs.writeFileSync(goalsFile, JSON.stringify(filteredGoals, null, 2));
+}
+
 export interface AvailableGroup {
   jid: string;
   name: string;
@@ -523,4 +572,24 @@ export function writeGroupsSnapshot(
       2,
     ),
   );
+}
+
+/**
+ * Write help requests snapshot for the container to read.
+ * Main sees all requests; others see only their group's requests.
+ */
+export function writeHelpRequestsSnapshot(
+  groupFolder: string,
+  isMain: boolean,
+): void {
+  const groupIpcDir = path.join(DATA_DIR, 'ipc', groupFolder);
+  fs.mkdirSync(groupIpcDir, { recursive: true });
+
+  const allRequests = getAllHelpRequests();
+  const filteredRequests = isMain
+    ? allRequests
+    : allRequests.filter((r) => r.group_folder === groupFolder);
+
+  const requestsFile = path.join(groupIpcDir, 'help_requests.json');
+  fs.writeFileSync(requestsFile, JSON.stringify(filteredRequests, null, 2));
 }
