@@ -13,7 +13,8 @@ const MAX_RETRIES = 5;
 const BASE_RETRY_MS = 5000;
 
 interface GroupState {
-  active: boolean;
+  active: boolean; // true when processing messages (serialized)
+  activeTasks: number; // count of concurrently running tasks
   pendingMessages: boolean;
   pendingTasks: QueuedTask[];
   process: ChildProcess | null;
@@ -25,6 +26,7 @@ export class GroupQueue {
   private groups = new Map<string, GroupState>();
   private activeCount = 0;
   private waitingGroups: string[] = [];
+  private allProcesses = new Map<string, { jid: string; proc: ChildProcess; containerName: string }>();
   private processMessagesFn: ((groupJid: string) => Promise<boolean>) | null =
     null;
   private statusCallbackFn: ((groupJid: string, active: boolean) => void) | null =
@@ -36,6 +38,7 @@ export class GroupQueue {
     if (!state) {
       state = {
         active: false,
+        activeTasks: 0,
         pendingMessages: false,
         pendingTasks: [],
         process: null,
@@ -102,12 +105,7 @@ export class GroupQueue {
       return;
     }
 
-    if (state.active) {
-      state.pendingTasks.push({ id: taskId, groupJid, fn });
-      logger.debug({ groupJid, taskId }, 'Container active, task queued');
-      return;
-    }
-
+    // Tasks run in parallel — only blocked by global concurrency limit
     if (this.activeCount >= MAX_CONCURRENT_CONTAINERS) {
       state.pendingTasks.push({ id: taskId, groupJid, fn });
       if (!this.waitingGroups.includes(groupJid)) {
@@ -120,14 +118,20 @@ export class GroupQueue {
       return;
     }
 
-    // Run immediately
+    // Run immediately (parallel with other tasks in same group)
     this.runTask(groupJid, { id: taskId, groupJid, fn });
   }
 
   registerProcess(groupJid: string, proc: ChildProcess, containerName: string): void {
     const state = this.getGroup(groupJid);
+    // For message processing, track on the group state (single at a time)
     state.process = proc;
     state.containerName = containerName;
+    // Also track in global set for shutdown
+    this.allProcesses.set(containerName, { jid: groupJid, proc, containerName });
+    proc.on('close', () => {
+      this.allProcesses.delete(containerName);
+    });
   }
 
   private async runForGroup(
@@ -169,12 +173,12 @@ export class GroupQueue {
 
   private async runTask(groupJid: string, task: QueuedTask): Promise<void> {
     const state = this.getGroup(groupJid);
-    state.active = true;
+    state.activeTasks++;
     this.activeCount++;
     this.emitStatus(groupJid, true);
 
     logger.debug(
-      { groupJid, taskId: task.id, activeCount: this.activeCount },
+      { groupJid, taskId: task.id, activeCount: this.activeCount, activeTasks: state.activeTasks },
       'Running queued task',
     );
 
@@ -183,11 +187,11 @@ export class GroupQueue {
     } catch (err) {
       logger.error({ groupJid, taskId: task.id, err }, 'Error running task');
     } finally {
-      state.active = false;
-      state.process = null;
-      state.containerName = null;
+      state.activeTasks--;
       this.activeCount--;
-      this.emitStatus(groupJid, false);
+      if (!state.active && state.activeTasks === 0) {
+        this.emitStatus(groupJid, false);
+      }
       this.drainGroup(groupJid);
     }
   }
@@ -220,21 +224,25 @@ export class GroupQueue {
 
     const state = this.getGroup(groupJid);
 
-    // Tasks first (they won't be re-discovered from SQLite like messages)
-    if (state.pendingTasks.length > 0) {
+    // Launch as many pending tasks as concurrency allows
+    while (
+      state.pendingTasks.length > 0 &&
+      this.activeCount < MAX_CONCURRENT_CONTAINERS
+    ) {
       const task = state.pendingTasks.shift()!;
       this.runTask(groupJid, task);
-      return;
     }
 
-    // Then pending messages
-    if (state.pendingMessages) {
+    // Then pending messages (only if no message processing is active)
+    if (state.pendingMessages && !state.active && this.activeCount < MAX_CONCURRENT_CONTAINERS) {
       this.runForGroup(groupJid, 'drain');
       return;
     }
 
-    // Nothing pending for this group; check if other groups are waiting for a slot
-    this.drainWaiting();
+    // Check if other groups are waiting for a slot
+    if (this.activeCount < MAX_CONCURRENT_CONTAINERS) {
+      this.drainWaiting();
+    }
   }
 
   private drainWaiting(): void {
@@ -263,13 +271,10 @@ export class GroupQueue {
       'GroupQueue shutting down',
     );
 
-    // Collect all active processes
-    const activeProcs: Array<{ jid: string; proc: ChildProcess; containerName: string | null }> = [];
-    for (const [jid, state] of this.groups) {
-      if (state.process && !state.process.killed) {
-        activeProcs.push({ jid, proc: state.process, containerName: state.containerName });
-      }
-    }
+    // Collect all active processes from the global tracker
+    const activeProcs = Array.from(this.allProcesses.values()).filter(
+      ({ proc }) => !proc.killed,
+    );
 
     if (activeProcs.length === 0) return;
 
@@ -277,8 +282,6 @@ export class GroupQueue {
     for (const { jid, proc, containerName } of activeProcs) {
       if (containerName) {
         // Defense-in-depth: re-sanitize before shell interpolation.
-        // Primary sanitization is in container-runner.ts when building the name,
-        // but we sanitize again here since exec() runs through a shell.
         const safeName = containerName.replace(/[^a-zA-Z0-9-]/g, '');
         logger.info({ jid, containerName: safeName }, 'Stopping container');
         exec(`container stop ${safeName}`, (err) => {
